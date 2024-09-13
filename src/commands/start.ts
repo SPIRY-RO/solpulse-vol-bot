@@ -133,10 +133,17 @@ ${c.icons.bot}${c.icons.flame}SolPulse Volume Bot${c.icons.flame}${c.icons.bot}
 ${c.icons.strongArm}${c.icons.strongArm}Dominate the Market with Solana's Most Powerful Volume Boosting Bot - SolPulse! 
 
 
-${c.icons.flame} Efficient Volume Handling - Maximize the impact of every trade with a system designed to manage volume smoothly and effectively.
-${c.icons.sprout} Organic Volume Module - Create a consistent and reliable trading volume that attracts investors and builds long-term market trust.
-${c.icons.shield} Anti BOTS-Protection — Protect your trades with built-in defense against MEV exploitation.
-${c.icons.lighting} Flexible Speed Settings - Adjust the trading pace to suit your strategy, whether you're looking for quick moves or a more steady, controlled approach.
+${c.icons.flame} Efficient Volume Handling 
+- Maximize the impact of every trade with a system designed to manage volume smoothly and effectively.
+
+${c.icons.sprout} Organic Volume Module 
+- Create a consistent and reliable trading volume that attracts investors and builds long-term market trust.
+
+${c.icons.shield} Anti BOTS-Protection 
+— Protect your trades with built-in defense against MEV exploitation.
+
+${c.icons.lighting} Flexible Speed Settings 
+- Adjust the trading pace to suit your strategy, whether you're looking for quick moves or a more steady, controlled approach.
 
 
 ${c.icons.chainLink} For support contact @SpiryBTC for sales @dukuweb3
@@ -156,6 +163,10 @@ export async function showWelcomeMessage(ctx: Context) {
     [{
       text: `${c.icons.moonWhite} Enter token address ${c.icons.moonWhite}`,
       callback_data: `token_address_wizard`,
+    }],
+    [{
+      text: `${c.icons.handshake} Referrals`,
+      callback_data: `referrals`,
     }]
   ];
 
