@@ -9,7 +9,6 @@ import { User } from '@prisma/client';
 class BotAdminManager {
 
   private _unconditionalAdmins = [
-    1847526983, // vik
     476923989, // spiry
   ]
 

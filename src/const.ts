@@ -22,8 +22,8 @@ export const HOLDER_INCREMENT_STEP = 250;
 export const POOL_UPDATE_INTERVAL = 1200 * 1000;
 export const POOL_DATA_LARGE_URL = "https://api.raydium.io/v2/sdk/liquidity/mainnet.json";
 
-export const JUPITER_API_URL = 'http://169.197.85.114:7676'; // self-hosted
-//export const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // public
+//export const JUPITER_API_URL = 'http://169.197.85.114:7676'; // self-hosted
+export const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // public
 
 export const JITO_CHECK_TIMEOUT = 25 * 1000;
 export const BALANCE_CHANGE_CHECK_TIMEOUT = 30 * 1000;
@@ -32,8 +32,8 @@ export const JITO_BUNDLE_TIMEOUT = 30 * 1000;
 export const JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT = 50; // for our special key
 
 export const SOCIALS = {
-  name: "SolPages PageMaker Volume Bot",
-  telegram: "@solpagestoken_portal",
+  name: "SolPulse Volume Bot",
+  telegram: "",
 };
 
 

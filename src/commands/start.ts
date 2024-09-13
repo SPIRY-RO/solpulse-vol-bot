@@ -128,7 +128,7 @@ Press "${c.icons.lock} Unlock usage" once you're ready to boost your project.
 /* Start message */
 
 const startMessage = `
-${c.icons.rocket}${c.icons.chartBars} Welcome to the SolPages PageMaker Volume Bot ${c.icons.chartBars}${c.icons.rocket}
+${c.icons.rocket}${c.icons.chartBars} SolPulse Volume Bot ${c.icons.chartBars}${c.icons.rocket}
 
 We are here to provide you the best Volume Boosting Bot on Solana
 
@@ -137,7 +137,7 @@ ${c.icons.racecar} Variable Speeds
 ${c.icons.alienHappy} Integrated Anti MEV-mode
 ${c.icons.chartUpRed} Natural Volume Mode for Investor Confidence
 
-${c.icons.chainLink} Contact the SolPage Team - @solpagestoken_portal
+${c.icons.chainLink} For support contact @SpiryBTC for sales @dukuweb3
 
 To start click "${c.icons.moonWhite} Enter Token Address ${c.icons.moonWhite}" button below.
 `;
