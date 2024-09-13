@@ -142,9 +142,6 @@ ${c.icons.sprout} Organic Volume Module
 ${c.icons.shield} Anti BOTS-Protection 
 — Protect your trades with built-in defense against MEV exploitation.
 
-${c.icons.lighting} Flexible Speed Settings 
-- Adjust the trading pace to suit your strategy, whether you're looking for quick moves or a more steady, controlled approach.
-
 
 ${c.icons.chainLink} For support contact @SpiryBTC for sales @dukuweb3
 
@@ -165,7 +162,11 @@ export async function showWelcomeMessage(ctx: Context) {
       callback_data: `token_address_wizard`,
     }],
     [{
-      text: `${c.icons.handshake} Referrals`,
+      text: `${c.icons.cashBankHouse} Your Wallet`,
+      callback_data: `wallet`,
+    }],
+    [{
+      text: `${c.icons.handshake} Affiliate Program`,
       callback_data: `referrals`,
     }]
   ];

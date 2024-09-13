@@ -43,6 +43,10 @@ ${c.icons.cashBankHouse} Unclaimed rewards: ${user.unclaimedRefRewards} SOL
           callback_data: `referrals_claim`,
         }],
         [{
+          text: `${c.icons.cashBankHouse} Your wallet`,
+          callback_data: `wallet`,
+        }],
+        [{
           text: `${c.icons.backArrow} Back`,
           callback_data: `work_menu`,
         }],
