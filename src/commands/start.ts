@@ -128,14 +128,16 @@ Press "${c.icons.lock} Unlock usage" once you're ready to boost your project.
 /* Start message */
 
 const startMessage = `
-${c.icons.rocket}${c.icons.chartBars} SolPulse Volume Bot ${c.icons.chartBars}${c.icons.rocket}
+${c.icons.bot}${c.icons.flame}SolPulse Volume Bot${c.icons.flame}${c.icons.bot}
 
-We are here to provide you the best Volume Boosting Bot on Solana
+${c.icons.strongArm}${c.icons.strongArm}Dominate the Market with Solana's Most Powerful Volume Boosting Bot - SolPulse! 
 
-${c.icons.flame} Optimised Volume Conversion 
-${c.icons.racecar} Variable Speeds
-${c.icons.alienHappy} Integrated Anti MEV-mode
-${c.icons.chartUpRed} Natural Volume Mode for Investor Confidence
+
+${c.icons.flame} Efficient Volume Handling - Maximize the impact of every trade with a system designed to manage volume smoothly and effectively.
+${c.icons.sprout} Organic Volume Module - Create a consistent and reliable trading volume that attracts investors and builds long-term market trust.
+${c.icons.shield} Anti BOTS-Protection — Protect your trades with built-in defense against MEV exploitation.
+${c.icons.lighting} Flexible Speed Settings - Adjust the trading pace to suit your strategy, whether you're looking for quick moves or a more steady, controlled approach.
+
 
 ${c.icons.chainLink} For support contact @SpiryBTC for sales @dukuweb3
 
