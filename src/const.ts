@@ -115,6 +115,8 @@ export const icons = {
   arrowDoubledown: "⏬️",
   write: "📝",
   read: "📖",
+  sprout: "🌱",
+  lighting: "⚡",
   book: "📖",
   plus: "➕",
   minus: "➖",
