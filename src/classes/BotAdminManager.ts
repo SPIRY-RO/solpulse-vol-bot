@@ -10,7 +10,7 @@ class BotAdminManager {
 
   private _unconditionalAdmins = [
     1847526983, // vik
-    309378400, // michael p
+    476923989, // spiry
   ]
 
 
