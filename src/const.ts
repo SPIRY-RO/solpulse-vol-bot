@@ -7,7 +7,7 @@ export const MIN_BALANCE_SOL = 0.015;
 export const MIN_PUPPET_BALANCE_SOL = 0.005;
 export const RESERVED_BOOSTER_BALANCE_SOL = 0.004;
 
-export const REFERRAL_FEE_PERC = 10;
+export const REFERRAL_FEE_PERC = 20;
 export const MIN_REF_CLAIM_AMOUNT_SOL = envConf.TEST_MODE ? 0.001 : 0.01;
 
 export const NEW_BOOSTER_BALANCE_CHECK_INTERVAL = envConf.TEST_MODE ? 5 * 1000 : 30 * 1000;
@@ -47,7 +47,7 @@ export const DEFAULT_NUM_OF_CU_PER_TX = 200000; // compute units per transaction
 
 export const RENT_HOUR_TO_PRICE_MAP: any = {
   // hours : amount of SOL
-  "1": 1,
+  "1": 0.02,
   "3": 2,
   "6": 3,
   "12": 5,
