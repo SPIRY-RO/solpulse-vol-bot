@@ -37,10 +37,6 @@ const workMenuKeyboard = {
         callback_data: `data-boosterShow-volume`,
       },
       {
-        text: `${c.icons.cup} Boost rank`,
-        callback_data: `data-boosterShow-rank`,
-      },
-      {
         text: `${c.icons.bag} Boost holders`,
         callback_data: `data-boosterShow-holders`,
       },
