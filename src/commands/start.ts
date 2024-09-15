@@ -128,12 +128,11 @@ Press "${c.icons.lock} Unlock usage" once you're ready to boost your project.
 /* Start message */
 
 const startMessage = `
-${c.icons.flame}SolPulse Volume Bot${c.icons.flame}
+${c.icons.flame}SolPulse Token Boost Bot${c.icons.flame}
 
-${c.icons.strongArm}${c.icons.strongArm}Dominate the Market with Solana's Most Powerful TOKEN BOOSTING BOT - SolPulse! 
-
-Super-Boosting ${c.icons.rocket} your token's ranking on DexScreener
-Increasing your holder count to pumping extra volume ${c.icons.chartUpRed}, we've got you covered!
+Super-Boost ${c.icons.rocket} your token's ranking on DexScreener
+Increasing your holder count to pumping extra volume ${c.icons.chartUpRed}
+SolPulse got you covered!
 
 
 ${c.icons.flame} Efficient Volume Handling 
@@ -161,7 +160,7 @@ export async function showWelcomeMessage(ctx: Context) {
   const userSettings = await userManager.getOrCreateSettingsFor(ctx.from?.id)
   const keyboard = [
     [{
-      text: `${c.icons.moonWhite} Enter token address ${c.icons.moonWhite}`,
+      text: `${c.icons.moonWhite} Enter Token Address ${c.icons.moonWhite}`,
       callback_data: `token_address_wizard`,
     }],
     [{
