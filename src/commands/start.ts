@@ -186,11 +186,6 @@ export async function showWelcomeMessage(ctx: Context) {
     caption: startMessage,
     reply_markup: { inline_keyboard: keyboard }
   });
-  await h.tryEditOrReply(ctx, startMessage, {
-    reply_markup: {
-      inline_keyboard: keyboard,
-    }
-  });
   return;
 }
 
