@@ -15,7 +15,7 @@ const workMenuKeyboard = {
   inline_keyboard: [
     [
       {
-        text: `${c.icons.lock} Unlock usage`,
+        text: `${c.icons.lock} Unlock Bot Usage`,
         callback_data: `show_rent`,
       },
       {
@@ -39,6 +39,10 @@ const workMenuKeyboard = {
       {
         text: `${c.icons.bag} Generate Holders`,
         callback_data: `data-boosterShow-holders`,
+      },
+      {
+        text: `${c.icons.cup} Boost Rank`,
+        callback_data: `data-boosterShow-rank`,
       },
     ],
     [
@@ -124,9 +128,12 @@ Press "${c.icons.lock} Unlock usage" once you're ready to boost your project.
 /* Start message */
 
 const startMessage = `
-${c.icons.bot}${c.icons.flame}SolPulse Volume Bot${c.icons.flame}${c.icons.bot}
+${c.icons.flame}SolPulse Volume Bot${c.icons.flame}
 
-${c.icons.strongArm}${c.icons.strongArm}Dominate the Market with Solana's Most Powerful Volume Boosting Bot - SolPulse! 
+${c.icons.strongArm}${c.icons.strongArm}Dominate the Market with Solana's Most Powerful TOKEN BOOSTING BOT - SolPulse! 
+
+Super-Boosting ${c.icons.rocket} your token's ranking on DexScreener
+Increasing your holder count to pumping extra volume ${c.icons.chartUpRed}, we've got you covered!
 
 
 ${c.icons.flame} Efficient Volume Handling 
@@ -136,7 +143,7 @@ ${c.icons.sprout} Organic Volume Module
 - Create a consistent and reliable trading volume that attracts investors and builds long-term market trust.
 
 ${c.icons.shield} Anti BOTS-Protection 
-— Protect your trades with built-in defense against MEV exploitation.
+- Protect your trades with built-in defense against MEV exploitation.
 
 
 ${c.icons.chainLink} For support contact @SpiryBTC for sales @dukuweb3
@@ -145,6 +152,8 @@ To start click "${c.icons.moonWhite} Enter Token Address ${c.icons.moonWhite}" b
 `;
 
 export async function showWelcomeMessage(ctx: Context) {
+  const startImageUrl = "https://i.imgur.com/OIXYoyR.png";
+
   h.answerCbQuerySafe(ctx);
   const isPMs = (ctx.chat?.type === "private");
   if (!isPMs) {
@@ -173,7 +182,10 @@ export async function showWelcomeMessage(ctx: Context) {
       callback_data: `work_menu`,
     }]);
   }
-
+  await ctx.replyWithPhoto({ url: startImageUrl }, {
+    caption: startMessage,
+    reply_markup: { inline_keyboard: keyboard }
+  });
   await h.tryEditOrReply(ctx, startMessage, {
     reply_markup: {
       inline_keyboard: keyboard,

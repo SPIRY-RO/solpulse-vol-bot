@@ -1,5 +1,5 @@
 {
-  "name": "Solana_volume_generator_bot",
+  "name": "SolPulse-Vol-Bot",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
@@ -12,7 +12,7 @@
     "deamon-unbuilt": "pm2 start 'npx ts-node src/index.ts' --name 'sol-volume' --log logs.log --time"
   },
   "keywords": [],
-  "author": "MP9000",
+  "author": "SPIRY-RO",
   "license": "Closed-source",
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",
