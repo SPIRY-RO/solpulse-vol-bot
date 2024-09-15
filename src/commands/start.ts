@@ -152,8 +152,6 @@ To start click "${c.icons.moonWhite} Enter Token Address ${c.icons.moonWhite}" b
 `;
 
 export async function showWelcomeMessage(ctx: Context) {
-  const startImageUrl = "https://i.imgur.com/OIXYoyR.png";
-
   h.answerCbQuerySafe(ctx);
   const isPMs = (ctx.chat?.type === "private");
   if (!isPMs) {
@@ -182,9 +180,11 @@ export async function showWelcomeMessage(ctx: Context) {
       callback_data: `work_menu`,
     }]);
   }
-  await ctx.replyWithPhoto({ url: startImageUrl }, {
-    caption: startMessage,
-    reply_markup: { inline_keyboard: keyboard }
+
+  await h.tryEditOrReply(ctx, startMessage, {
+    reply_markup: {
+      inline_keyboard: keyboard,
+    }
   });
   return;
 }
