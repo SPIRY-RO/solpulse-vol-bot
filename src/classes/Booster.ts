@@ -826,7 +826,7 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
     const balance = await this.getSolBalance();
 
     const ulampsPerCU = DEFAULT_uLAMPS_PER_CU;
-    const priorityFeeLamps = (ulampsPerCU * DEFAULT_NUM_OF_CU_PER_TX) / 50 ** 6;
+    const priorityFeeLamps = (ulampsPerCU * DEFAULT_NUM_OF_CU_PER_TX) / 10 ** 6;
     const rentExemptionLamp = await this.raySwap.tryGetRentExemptionFee(null);
     h.debug(`Lamports needed to keep acc rent - exempt: ${rentExemptionLamp} `);
     const magicNumber = 1.1; // makes my maths actually work
