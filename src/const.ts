@@ -39,7 +39,7 @@ export const SOCIALS = {
 
 export const WSOL_MINT_ADDR = "So11111111111111111111111111111111111111112";
 export const DEFAULT_SOLANA_FEE_IN_LAMPS = 9000;
-export const SWAP_PRIORITY_FEE_IN_LAMPS = 25001;
+export const SWAP_PRIORITY_FEE_IN_LAMPS = 55001;
 export const SWAP_SLIPPAGE_PERCENT = 10;
 // total gas = cu * price1cu
 export const DEFAULT_uLAMPS_PER_CU = 50000; // lamports per compute-unit; default Solana value
