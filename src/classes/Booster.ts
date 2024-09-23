@@ -341,9 +341,9 @@ class Booster {
 
       for (let i = 0; i < bundlesOfTxs.length; i++) {
         const bundleTxs = bundlesOfTxs[i];
-        let success = await makeAndSendJitoBundle(bundleTxs, this.keypair, jitoTip.chanceOf95);
+        let success = await makeAndSendJitoBundle(bundleTxs, this.keypair, jitoTip.average);
         if (!success)
-          success = await makeAndSendJitoBundle(bundleTxs, this.keypair, jitoTip.chanceOf95);
+          success = await makeAndSendJitoBundle(bundleTxs, this.keypair, jitoTip.average);
         if (!success) {
           console.error(`[${this.shortName}] Failed to send funds to puppets; one or more jito bundles failed to execute; no more details are known`);
           return false
@@ -435,7 +435,7 @@ class Booster {
       );
       tx.sign([puppet.keypair]);
       h.debug(`[${this.shortName}] closing token acc of ${puppet.shortAddr}`);
-      const jitoResult = await makeAndSendJitoBundle([tx], puppet.keypair, jitoTip.chanceOf95);
+      const jitoResult = await makeAndSendJitoBundle([tx], puppet.keypair, jitoTip.average);
       h.debug(`[${this.shortName}] closed token acc OK? ${jitoResult}; addr: ${puppet.shortAddr}`);
       if (jitoResult) {
         await this.waitForBalanceChange(null, puppet);
@@ -851,7 +851,7 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
     h.debug(`Lamports needed to keep acc rent - exempt: ${rentExemptionLamp} `);
     const magicNumber = 1.1; // makes my maths actually work
     const resBalance_normalTx = (priorityFeeLamps + rentExemptionLamp + c.DEFAULT_SOLANA_FEE_IN_LAMPS) * magicNumber;
-    const resBalance_forJitoBundle = resBalance_normalTx + jitoTip.chanceOf95;
+    const resBalance_forJitoBundle = resBalance_normalTx + jitoTip.average;
     const freeBalance = Number((balance - resBalance_forJitoBundle).toFixed());
     h.debug(`Reserved SOL: ${(balance - freeBalance) / solana.LAMPORTS_PER_SOL} `);
 

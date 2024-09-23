@@ -3,7 +3,7 @@ import axios from "axios";
 
 import * as h from "../helpers";
 
-const JITO_TIP_STAT_CHECK_INTERVAL = 25 * 1000;
+const JITO_TIP_STAT_CHECK_INTERVAL = 15 * 1000;
 const TIP_STATS_API_URL = "http://bundles-api-rest.jito.wtf/api/v1/bundles/tip_floor";
 const OVER_99_INCREMENT_FACTOR = 1.15;
 
@@ -16,6 +16,7 @@ export const jitoTip: TipMetrics = {
   chanceOf95_inSol: 0,
   chanceOf99_inSol: 0,
   chanceOfOver99_inSol: 0,
+  average_inSol: 0,
 
   chanceOf25: 0,
   chanceOf50: 0,
@@ -23,6 +24,7 @@ export const jitoTip: TipMetrics = {
   chanceOf95: 0,
   chanceOf99: 0,
   chanceOfOver99: 0,
+  average: 0,
 };
 
 
@@ -49,18 +51,67 @@ async function fetchTipFloorData(): Promise<void> {
   }
 }
 
+
+async function calcAverageTip() {
+  const newAvgTip = await getAverageJitoTip();
+  if (!newAvgTip)
+    return;
+  jitoTip.average = newAvgTip.lamps;
+  jitoTip.average_inSol = newAvgTip.sol;
+}
+
+async function getAverageJitoTip() {
+  try {
+    const response = await axios({
+      method: "get",
+      url: "https://explorer.jito.wtf/wtfrest/api/v1/bundles/recent",
+      params: {
+        limit: 200,
+        sort: "Time",
+        asc: false,
+        timeframe: "Week",
+      },
+    });
+
+    const data = response.data;
+    const averageTip_lamps = calculateAverageTip(data);
+
+    // Round to the nearest 5 decimals
+    const averageTip_sol = Math.round((averageTip_lamps / solana.LAMPORTS_PER_SOL) * 100000) / 100000;
+    //h.debug(`[jito-tip] Average tip: ${averageTip_sol} SOL`);
+    return { lamps: averageTip_lamps, sol: averageTip_sol };
+  } catch (error) {
+    console.error(`[jito-tip] Error when calculating average tip: ${error}`);
+    return null;
+  }
+}
+
+
+function calculateAverageTip(data: JitoBundle[]) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return 0;
+  }
+  const totalTip = data.reduce((sum, item) => sum + item.landedTipLamports, 0);
+  return Number((totalTip / data.length).toFixed(0));
+}
+
+
+
 export async function runJitoTipMetricUpdater() {
   while (true) {
     await fetchTipFloorData();
+    await calcAverageTip();
     await h.sleep(JITO_TIP_STAT_CHECK_INTERVAL);
   }
 }
+
+
 
 export async function waitForJitoTipMetrics() {
   const timeout = 10 * 1000;
   const timeoutAt = Date.now() + timeout;
   while (Date.now() < timeoutAt) {
-    if (jitoTip.chanceOf99 != 0)
+    if (jitoTip.chanceOf99 != 0 && jitoTip.average != 0)
       return true;
     await h.sleep(250);
   }
@@ -75,6 +126,7 @@ export type TipMetrics = {
   chanceOf95_inSol: number;
   chanceOf99_inSol: number;
   chanceOfOver99_inSol: number,
+  average_inSol: number,
 
   chanceOf25: number;
   chanceOf50: number;
@@ -82,4 +134,14 @@ export type TipMetrics = {
   chanceOf95: number;
   chanceOf99: number;
   chanceOfOver99: number;
+  average: number,
+};
+
+
+interface JitoBundle {
+  bundleId: string;
+  timestamp: string;
+  tippers: string[];
+  transactions: string[];
+  landedTipLamports: number;
 };

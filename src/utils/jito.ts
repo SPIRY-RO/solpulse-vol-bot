@@ -6,7 +6,7 @@ import { isError } from "jito-ts/dist/sdk/block-engine/utils";
 import base58 from "bs58";
 import axios from "axios";
 
-import { web3Connection } from "..";
+import { statusChecker, web3Connection } from "..";
 import * as h from "../helpers";
 import * as c from "../const";
 import { envConf } from "../config";
@@ -19,7 +19,7 @@ export async function makeAndSendJitoBundle(
   txs: solana.VersionedTransaction[], keypair: solana.Keypair, tipOverride_inLamps?: number,
 ): Promise<boolean> {
   if (!tipOverride_inLamps)
-    tipOverride_inLamps = jitoTip.chanceOf75;
+    tipOverride_inLamps = jitoTip.average;
 
   try {
     //const txNum = Math.ceil(txs.length / 3);
@@ -105,8 +105,8 @@ async function build_bundle(
     const bundleID = await search.sendBundle(maybeBundle);
     return bundleID;
   } catch (e) {
-    console.log("In build_bundle()");
-    console.log(e);
+    console.error("Error in build_bundle()");
+    console.error(e);
     console.trace(e);
   }
   return null;
@@ -177,19 +177,9 @@ export async function getBundleStatuses(bundleIds: [string]) {
   }
 }
 
+
 async function waitUnilBundleSucceeds(bundleID: string) {
-  const startTime = Date.now();
-  while (Date.now() < startTime + c.JITO_CHECK_TIMEOUT) {
-    const bundleResult = await getBundleStatuses([bundleID]);
-    if (!bundleResult) {
-      console.warn(`[bundle:${bundleID}] missing bundle result; likely due to network error or improper args`);
-    } else if (bundleResult[0]?.confirmation_status) {
-      return true;
-    } else if (bundleResult?.length) {
-      h.debug(`[bundle:${bundleID}] unfinalized bundle result: ${JSON.stringify(bundleResult)}`);
-    }
-    await h.sleep(2000);
-  }
-  h.debug(`[bundle:${bundleID}] check timed out after ${c.JITO_CHECK_TIMEOUT / 1000}s`);
-  return false;
+  if (!bundleID)
+    return false;
+  return await statusChecker.waitForResult(bundleID);
 }

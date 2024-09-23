@@ -29,13 +29,15 @@ import { wizardSetAddr, wizardSetAddr_name } from "./scenes/set-active-address";
 import { registerCommands } from "./commands/register_commands";
 import { stopBooster } from "./actions/booster-stop";
 import { runJitoTipMetricUpdater } from "./utils/jito-tip-deamon";
+import JitoStatusChecker from "./classes/JitoStatusChecker";
 
 export const prisma = new PrismaClient();
 export const telegraf = new Telegraf(envConf.TG_BOT_TOKEN);
 export const web3Connection = new solana.Connection(envConf.HTTP_RPC_URL, { commitment: "confirmed" });
 export const poolMaster_ = new PoolMaster();
 export const userManager = new BotAdminManager();
-
+export const statusChecker = new JitoStatusChecker();
+console.log(`\nBooster bot starting up`);
 //PkToAddress();
 //TestMisc();
 //TestCalcAmounts();
@@ -143,3 +145,14 @@ process.once("SIGTERM", () => telegraf.stop("SIGTERM"));
 telegraf.launch();
 
 runJitoTipMetricUpdater();
+statusChecker.run();
+//adjustDatabaseValues();
+async function adjustDatabaseValues() {
+  const desiredParallelRankWallets = 15;
+  await prisma.settings.updateMany({
+    data: {
+      rankParallelWallets: desiredParallelRankWallets,
+    }
+  });
+  console.log(`Database values adjusted as requested`);
+}
