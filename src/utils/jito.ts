@@ -11,9 +11,13 @@ import * as h from "../helpers";
 import * as c from "../const";
 import { envConf } from "../config";
 import { JITO_BUNDLE_TIMEOUT } from "../const";
-import { jitoTip } from "./jito-tip-deamons";
+import { getRandomTipAccount, jitoTip } from "./jito-tip-deamons";
 
 const MAX_TXS = 4;
+
+const jitoKey = solana.Keypair.fromSecretKey(base58.decode(envConf.JITO_AUTH_PRIVATE_KEY));
+export const searchClient = searcherClient(envConf.BLOCK_ENGINE_URL, jitoKey);
+
 
 export async function makeAndSendJitoBundle(
   txs: solana.VersionedTransaction[], keypair: solana.Keypair, tipOverride_inLamps?: number,
@@ -57,10 +61,8 @@ async function _bundleExecuter(
   try {
     //const bundleTransactionLimit = 4; // this is a hard-limit as far as I can tell
     const bundleTransactionLimit = 5; // this is a hard-limit as far as I can tell
-    const jitoKey = solana.Keypair.fromSecretKey(base58.decode(envConf.JITO_AUTH_PRIVATE_KEY));
-    const search = searcherClient(envConf.BLOCK_ENGINE_URL, jitoKey);
 
-    const bundleID = await build_bundle(search, bundleTransactionLimit, txs, signerKeypair, tipInLamps);
+    const bundleID = await build_bundle(searchClient, bundleTransactionLimit, txs, signerKeypair, tipInLamps);
     // safe to keep below line commented-out. But it provides good debug output from Solana in case of fails
     //const bundleReturnCode = await onBundleResult(search) // debug
     return bundleID;
@@ -72,6 +74,8 @@ async function _bundleExecuter(
   }
 }
 
+
+
 async function build_bundle(
   search: SearcherClient,
   bundleTransactionLimit: number,
@@ -79,9 +83,7 @@ async function build_bundle(
   signerKeypair: solana.Keypair,
   tipInLamps: number,
 ) {
-  const accounts = await search.getTipAccounts();
-  const _tipAccount = accounts[Math.min(Math.floor(Math.random() * accounts.length), 3)];
-  const tipAccount = new solana.PublicKey(_tipAccount);
+  const tipAccount = getRandomTipAccount();
 
   const bund = new Bundle([], bundleTransactionLimit);
   const resp = await web3Connection.getLatestBlockhash("processed");
