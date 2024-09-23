@@ -15,7 +15,7 @@ import * as h from '../helpers';
 import * as sh from '../utils/solana_helpers';
 import { makeAndSendJitoBundle } from '../utils/jito';
 import { Settings, User } from '@prisma/client';
-import { jitoTip } from '../utils/jito-tip-deamon';
+import { jitoTip } from '../utils/jito-tip-deamons';
 import base58 from 'bs58';
 import { isJSDocNullableType } from 'typescript';
 import { empty } from '@prisma/client/runtime/library';
@@ -225,7 +225,7 @@ class Booster {
       )
       if (!bundleMetrics) {
         console.warn(`[${this.shortName}] failed to build swap tx on '${puppet.shortAddr}'; not transacting`);
-        return
+        return;
       }
       await this.waitForBalanceChange(null, puppet);
       if (bundleMetrics && puppet.isLastBalCheckSuccessful) {
