@@ -3,9 +3,9 @@ import { envConf } from "./config";
 
 //export const CHANGE_WALLET_EVERY_N_BUYS = envConf.TEST_MODE ? 5 : 10;
 //export const CHANGE_WALLET_EVERY_N_BUYS = 999999999; // unused; debug; do not change wallet
-export const MIN_BALANCE_SOL = 0.03;
-export const MIN_PUPPET_BALANCE_SOL = 0.002;
-export const RESERVED_BOOSTER_BALANCE_SOL = 0.002;
+export const MIN_BALANCE_SOL = 0.015;
+export const MIN_PUPPET_BALANCE_SOL = 0.005;
+export const RESERVED_BOOSTER_BALANCE_SOL = 0.004;
 
 export const REFERRAL_FEE_PERC = 20;
 export const MIN_REF_CLAIM_AMOUNT_SOL = envConf.TEST_MODE ? 0.001 : 0.01;
