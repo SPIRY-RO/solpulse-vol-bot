@@ -244,22 +244,6 @@ class Booster {
     }
   }
 
-
-
-  private async _spawnAndFillBoosterWallets_test(mainBalances: BoosterBalances) {
-    const knownPKs = [
-      '2n8i7Lg7eejtFJ5NV5614wd238dm5qJSkVLBzpVfhLFRS4A1S3RMY96U9UsS3Dk6DkmcwMCeyesZXsYco79KnuA',
-      '2m2yZmJcbN4CspM7VapwQGSRwWuKpnN1VRARgZqUDNv2bnXnSXJabvnUFQw33viX1LM7F9kfXUGMUERREGjaXbLV',
-    ]
-    for (const pk of knownPKs) {
-      this.puppetWallets.push(
-        new PuppetWallet(h.keypairFrom(pk), await this.getBalances(h.keypairFrom(pk).publicKey, null))
-      );
-    }
-    //return await this._fillBoosterWallets(mainBalances);
-    return true;
-  }
-
   private async _spawnAndFillBoosterWallets(mainBalances: BoosterBalances) {
     h.debug(`[${this.shortName}] setting up puppet wallets`);
     const nOfWallets = (this.type === 'volume' ? this.settings.volumeParallelWallets : this.settings.rankParallelWallets);
@@ -385,7 +369,7 @@ class Booster {
       promises.push(this._consolidateSolOf(puppet));
       bundlesSoFar += 1;
       if (bundlesSoFar % c.JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT)
-        await h.sleep(1500);
+        await h.sleep(2500);
     }
     return await Promise.all(promises);
   }
@@ -555,7 +539,6 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
       balances = await this.waitForBalanceChange(balances, null);
       this.metrics.totalTx += 1;
     }
-    //const puppetsSpawned = await this._spawnAndFillBoosterWallets_test(balances);
     const puppetsReady = await this._spawnAndFillBoosterWallets(balances);
     if (!puppetsReady) {
       h.trySend(this.ownerTgID, `Failed to setup puppet wallets for your ${this.type} booster, either due to low balance (need at least ${this.minBalanceToUsePuppets} SOL) in your wallet or a network error. You can try again.`);
@@ -594,8 +577,6 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
       await this._waitBetweenBoosts(true);
     }
   }
-
-
   private async _rankBoostAtomicTx(puppet: PuppetWallet) {
     h.debug(`[${this.shortName}] starting atomic tx; wallet: ${h.getShortAddr(puppet.pubkey)}`);
     const slippagePerc = 50;
@@ -666,7 +647,6 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
     }
   }
 
-
   // Function to transfer all SOL to a new wallet
   private async transferAllSol(fromWallet: Wallet, toPublicKey: string) {
     const balance = await web3Connection.getBalance(fromWallet.publicKey);
@@ -674,7 +654,7 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
       const transaction = solana.SystemProgram.transfer({
         fromPubkey: fromWallet.publicKey,
         toPubkey: new solana.PublicKey(toPublicKey),
-        lamports: balance - 5000, // Subtract 5000 lamports for the transaction fee
+        lamports: balance - 15000, // Subtract 5000 lamports for the transaction fee
       });
       let blockhash = (await web3Connection.getLatestBlockhash("finalized")).blockhash;
       const transactionToSend = new solana.Transaction().add(transaction);
@@ -799,7 +779,7 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
       }
 
       if ((Date.now() - timeStarted) > c.BALANCE_CHANGE_CHECK_TIMEOUT) {
-        console.warn(`Balances unchanged; timed-out after ${c.BALANCE_CHANGE_CHECK_TIMEOUT / 1000} seconds`);
+        console.warn(`Balances unchanged; timed-out after ${c.BALANCE_CHANGE_CHECK_TIMEOUT / 1500} seconds`);
         const emptyBalancesReceived = (balanceAfter.baseSol == 0 && balanceAfter.tokenSol == 0);
         if (!puppetWallet && !emptyBalancesReceived) {
           this._wasLastBalanceCheckSuccessful = false;
@@ -846,7 +826,7 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
     const balance = await this.getSolBalance();
 
     const ulampsPerCU = DEFAULT_uLAMPS_PER_CU;
-    const priorityFeeLamps = (ulampsPerCU * DEFAULT_NUM_OF_CU_PER_TX) / 10 ** 6;
+    const priorityFeeLamps = (ulampsPerCU * DEFAULT_NUM_OF_CU_PER_TX) / 50 ** 6;
     const rentExemptionLamp = await this.raySwap.tryGetRentExemptionFee(null);
     h.debug(`Lamports needed to keep acc rent - exempt: ${rentExemptionLamp} `);
     const magicNumber = 1.1; // makes my maths actually work
