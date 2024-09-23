@@ -52,7 +52,7 @@ export const RENT_HOUR_TO_PRICE_MAP: any = {
   "6": 3,
   "12": 5,
   "24": 2,
-  [String(7 * 24)]: 15,
+  [String(7 * 24)]: 5,
   [String(30 * 24)]: 25,
 };
 
