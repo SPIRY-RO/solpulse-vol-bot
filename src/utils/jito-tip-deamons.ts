@@ -2,7 +2,9 @@ import * as solana from "@solana/web3.js";
 import axios from "axios";
 
 import * as h from "../helpers";
+import { searchClient } from "./jito";
 
+const JITO_TIP_ACC_REFETCH_INTERVAL = 120 * 1000;
 const JITO_TIP_STAT_CHECK_INTERVAL = 15 * 1000;
 const TIP_STATS_API_URL = "http://bundles-api-rest.jito.wtf/api/v1/bundles/tip_floor";
 const OVER_99_INCREMENT_FACTOR = 1.15;
@@ -86,7 +88,6 @@ async function getAverageJitoTip() {
   }
 }
 
-
 function calculateAverageTip(data: JitoBundle[]) {
   if (!Array.isArray(data) || data.length === 0) {
     return 0;
@@ -96,13 +97,39 @@ function calculateAverageTip(data: JitoBundle[]) {
 }
 
 
-
 export async function runJitoTipMetricUpdater() {
   while (true) {
     await fetchTipFloorData();
     await calcAverageTip();
     await h.sleep(JITO_TIP_STAT_CHECK_INTERVAL);
   }
+}
+
+export async function runJitoTipAccsUpdater() {
+  while (true) {
+    await fetchTipAccounts();
+    await h.sleep(JITO_TIP_ACC_REFETCH_INTERVAL);
+  }
+}
+
+
+
+let tipAccounts: string[] = [];
+
+async function fetchTipAccounts() {
+  try {
+    const newAccounts = await searchClient.getTipAccounts();
+    if (!newAccounts || newAccounts?.length === 0)
+      return;
+    tipAccounts = newAccounts;
+  } catch (e: any) {
+    console.error(`[jito-deamons] error while fetching tip accounts: ${e}`);
+  }
+}
+
+export function getRandomTipAccount() {
+  const _tipAccount = tipAccounts[Math.min(Math.floor(Math.random() * tipAccounts.length), 3)];
+  return new solana.PublicKey(_tipAccount);
 }
 
 

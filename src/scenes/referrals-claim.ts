@@ -12,7 +12,7 @@ import Booster from "../classes/Booster";
 import { DEFAULT_NUM_OF_CU_PER_TX, DEFAULT_SOLANA_FEE_IN_LAMPS, DEFAULT_uLAMPS_PER_CU, MIN_REF_CLAIM_AMOUNT_SOL, NEW_BOOSTER_MIN_ACCEPTED_BALANCE_SOL } from "../const";
 import RaydiumSwap from '../classes/RaydiumSwap';
 import { makeAndSendJitoBundle } from '../utils/jito';
-import { jitoTip } from '../utils/jito-tip-deamon';
+import { jitoTip } from '../utils/jito-tip-deamons';
 
 
 export const wizardReferralsClaim_name = "wizard-referrals-claim";

@@ -9,7 +9,7 @@ import * as c from "../const";
 import { workMenuBackButton } from "../commands/start";
 import RaydiumSwap from "../classes/RaydiumSwap";
 import { makeAndSendJitoBundle } from "../utils/jito";
-import { jitoTip } from "../utils/jito-tip-deamon";
+import { jitoTip } from "../utils/jito-tip-deamons";
 
 const keyboard = {
   inline_keyboard: [

@@ -28,7 +28,7 @@ import {
 import { wizardSetAddr, wizardSetAddr_name } from "./scenes/set-active-address";
 import { registerCommands } from "./commands/register_commands";
 import { stopBooster } from "./actions/booster-stop";
-import { runJitoTipMetricUpdater } from "./utils/jito-tip-deamon";
+import { runJitoTipMetricUpdater } from "./utils/jito-tip-deamons";
 import JitoStatusChecker from "./classes/JitoStatusChecker";
 
 export const prisma = new PrismaClient();

@@ -10,7 +10,7 @@ import RaydiumSwap from "./classes/RaydiumSwap";
 import { web3Connection } from '.';
 import { makeAndSendJitoBundle } from './utils/jito';
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
-import { jitoTip, waitForJitoTipMetrics } from './utils/jito-tip-deamon';
+import { jitoTip, waitForJitoTipMetrics } from './utils/jito-tip-deamons';
 import { Wallet } from '@coral-xyz/anchor';
 import Booster from './classes/Booster';
 

@@ -20,7 +20,7 @@ import * as sh from '../utils/solana_helpers';
 import * as c from '../const';
 import { makeAndSendJitoBundle } from '../utils/jito';
 import { debug, getRandomNumber } from '../helpers';
-import { jitoTip } from '../utils/jito-tip-deamon';
+import { jitoTip } from '../utils/jito-tip-deamons';
 
 
 class RaydiumSwap {

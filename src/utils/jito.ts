@@ -11,7 +11,7 @@ import * as h from "../helpers";
 import * as c from "../const";
 import { envConf } from "../config";
 import { JITO_BUNDLE_TIMEOUT } from "../const";
-import { jitoTip } from "./jito-tip-deamon";
+import { jitoTip } from "./jito-tip-deamons";
 
 const MAX_TXS = 4;
 

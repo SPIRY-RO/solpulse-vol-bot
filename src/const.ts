@@ -26,7 +26,8 @@ export const JUPITER_API_URL = 'http://169.197.85.114:7676'; // self-hosted
 //export const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // public
 
 export const JITO_BUNDLE_CHECK_TIMEOUT = 25 * 1000;
-export const JITO_STATUS_CHECK_INTERVAL = 2 * 1000; // check new bundle status this often
+export const JITO_STATUS_CHECK_INTERVAL = 2 * 1000; 
+export const BALANCE_CHANGE_CHECK_TIMEOUT = 10 * 1000;
 export const JITO_BUNDLE_TIMEOUT = 10 * 1000;
 //export const JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT = 5; // for regular keys
 export const JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT = 50; // for our special key
