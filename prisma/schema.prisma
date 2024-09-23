@@ -50,7 +50,7 @@ model Settings {
   selectedTokenAddr     String @default("")
   volumeSpeed           Int @default(1)
   volumeDuration        Int @default(3600)
-  volumeParallelWallets Int @default(2)
+  volumeParallelWallets Int @default(6)
   holdersNewHolders     Int @default(500)
   rankParallelWallets   Int @default(10)
 }
