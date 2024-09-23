@@ -22,10 +22,10 @@ export const HOLDER_INCREMENT_STEP = 250;
 export const POOL_UPDATE_INTERVAL = 1200 * 1000;
 export const POOL_DATA_LARGE_URL = "https://api.raydium.io/v2/sdk/liquidity/mainnet.json";
 
-export const JUPITER_API_URL = 'http://169.197.85.114:7676'; // self-hosted
-//export const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // public
+//export const JUPITER_API_URL = 'http://169.197.85.114:7676'; // self-hosted
+export const JUPITER_API_URL = 'https://quote-api.jup.ag/v6'; // public
 
-export const JITO_CHECK_TIMEOUT = 25 * 1000;
+export const JITO_CHECK_TIMEOUT = 30 * 1000;
 export const BALANCE_CHANGE_CHECK_TIMEOUT = 30 * 1000;
 export const JITO_BUNDLE_TIMEOUT = 30 * 1000;
 //export const JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT = 5; // for regular keys
@@ -38,9 +38,9 @@ export const SOCIALS = {
 
 
 export const WSOL_MINT_ADDR = "So11111111111111111111111111111111111111112";
-export const DEFAULT_SOLANA_FEE_IN_LAMPS = 5000;
-export const SWAP_PRIORITY_FEE_IN_LAMPS = 10001;
-export const SWAP_SLIPPAGE_PERCENT = 5;
+export const DEFAULT_SOLANA_FEE_IN_LAMPS = 9000;
+export const SWAP_PRIORITY_FEE_IN_LAMPS = 25001;
+export const SWAP_SLIPPAGE_PERCENT = 10;
 // total gas = cu * price1cu
 export const DEFAULT_uLAMPS_PER_CU = 50000; // lamports per compute-unit; default Solana value
 export const DEFAULT_NUM_OF_CU_PER_TX = 200000; // compute units per transaction; default Solana value
