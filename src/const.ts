@@ -44,7 +44,7 @@ export const DEFAULT_SOLANA_FEE_IN_LAMPS = 15001;
 export const SWAP_PRIORITY_FEE_IN_LAMPS = 15001;
 export const SWAP_SLIPPAGE_PERCENT = 15;
 // total gas = cu * price1cu
-export const DEFAULT_uLAMPS_PER_CU = 50000; // lamports per compute-unit; default Solana value
+export const DEFAULT_uLAMPS_PER_CU = 30000; // lamports per compute-unit; default Solana value
 export const DEFAULT_NUM_OF_CU_PER_TX = 200000; // compute units per transaction; default Solana value
 
 export const RENT_HOUR_TO_PRICE_MAP: any = {
