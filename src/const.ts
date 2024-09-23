@@ -49,8 +49,8 @@ export const DEFAULT_NUM_OF_CU_PER_TX = 200000; // compute units per transaction
 
 export const RENT_HOUR_TO_PRICE_MAP: any = {
   // hours : amount of SOL
-  "1": 0.1,
-  "3": 2,
+  "1": 0.5,
+  "3": 1,
   "6": 3,
   "12": 5,
   "24": 2,
