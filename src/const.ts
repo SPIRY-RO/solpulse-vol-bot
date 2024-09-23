@@ -3,9 +3,9 @@ import { envConf } from "./config";
 
 //export const CHANGE_WALLET_EVERY_N_BUYS = envConf.TEST_MODE ? 5 : 10;
 //export const CHANGE_WALLET_EVERY_N_BUYS = 999999999; // unused; debug; do not change wallet
-export const MIN_BALANCE_SOL = 0.01;
-export const MIN_PUPPET_BALANCE_SOL = 0.003;
-export const RESERVED_BOOSTER_BALANCE_SOL = 0.006;
+export const MIN_BALANCE_SOL = 0.03;
+export const MIN_PUPPET_BALANCE_SOL = 0.007;
+export const RESERVED_BOOSTER_BALANCE_SOL = 0.004;
 
 export const REFERRAL_FEE_PERC = 20;
 export const MIN_REF_CLAIM_AMOUNT_SOL = envConf.TEST_MODE ? 0.001 : 0.01;
@@ -44,7 +44,7 @@ export const DEFAULT_SOLANA_FEE_IN_LAMPS = 15001;
 export const SWAP_PRIORITY_FEE_IN_LAMPS = 15001;
 export const SWAP_SLIPPAGE_PERCENT = 15;
 // total gas = cu * price1cu
-export const DEFAULT_uLAMPS_PER_CU = 40000; // lamports per compute-unit; default Solana value
+export const DEFAULT_uLAMPS_PER_CU = 50000; // lamports per compute-unit; default Solana value
 export const DEFAULT_NUM_OF_CU_PER_TX = 200000; // compute units per transaction; default Solana value
 
 export const RENT_HOUR_TO_PRICE_MAP: any = {
