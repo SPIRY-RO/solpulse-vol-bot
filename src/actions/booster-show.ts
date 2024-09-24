@@ -231,6 +231,14 @@ export async function showRankBooster(ctx: Context, boosterID?: string, refreshO
   const totalBalance = Number((mainWalletBalance + lastKnownPuppetBalances).toFixed(4));
     
   let volumeBoosterText = `${c.icons.goblet} Rank Booster ${c.icons.goblet}
+The Rank Boost will pump DexScreener metrics to super-boost your token's ranking on it by:
+
+- Increasing number of transactions
+- Ratio of buys to sells -> More buys then sells
+- Ratio of buyers to sellers -> More buyers then sellers
+- Number of makers -> More traders
+
+Ideal and most cost-efficient for new launches and charts with some organic volume.
 
 ${c.icons.moonWhite} Token:
 <code>${settings.selectedTokenAddr}</code>
