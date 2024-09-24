@@ -101,6 +101,10 @@ const durationKeyboard = {
         text: `3 Hours`,
         callback_data: `data-settings-duration-10800`,
       },
+      {
+        text: `12 Hours`,
+        callback_data: `data-settings-duration-43200`,
+      },
     ],
     [
       {
