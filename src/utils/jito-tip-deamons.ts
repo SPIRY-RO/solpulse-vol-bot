@@ -4,10 +4,10 @@ import axios from "axios";
 import * as h from "../helpers";
 import { searchClient } from "./jito";
 
-const JITO_TIP_ACC_REFETCH_INTERVAL = 120 * 1000;
+const JITO_TIP_ACC_REFETCH_INTERVAL = 60 * 1000;
 const JITO_TIP_STAT_CHECK_INTERVAL = 15 * 1000;
 const TIP_STATS_API_URL = "http://bundles-api-rest.jito.wtf/api/v1/bundles/tip_floor";
-const OVER_99_INCREMENT_FACTOR = 1.25;
+const OVER_99_INCREMENT_FACTOR = 1.3;
 
 
 
