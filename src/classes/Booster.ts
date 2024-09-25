@@ -14,9 +14,6 @@ import * as sh from "../utils/solana_helpers";
 import { makeAndSendJitoBundle } from "../utils/jito";
 import { Settings, User } from "@prisma/client";
 import { jitoTip } from "../utils/jito-tip-deamons";
-import base58 from "bs58";
-import { isJSDocNullableType } from "typescript";
-import { empty } from "@prisma/client/runtime/library";
 
 export const BOOSTER_TYPES = {
   volume: "volume",
@@ -170,7 +167,6 @@ class Booster {
       balances = await this.waitForBalanceChange(balances, null);
       this.metrics.totalTx += 1;
     }
-    //const puppetsSpawned = await this._spawnAndFillBoosterWallets_test(balances);
     const puppetsReady = await this._spawnAndFillBoosterWallets(balances);
     if (!puppetsReady) {
       h.trySend(
@@ -232,20 +228,6 @@ class Booster {
       console.error(`[${this.shortName}] error in boost cycle of puppet ${puppet.pubkey.toBase58()}: ${e}`);
       console.trace(e);
     }
-  }
-
-  private async _spawnAndFillBoosterWallets_test(mainBalances: BoosterBalances) {
-    const knownPKs = [
-      "2n8i7Lg7eejtFJ5NV5614wd238dm5qJSkVLBzpVfhLFRS4A1S3RMY96U9UsS3Dk6DkmcwMCeyesZXsYco79KnuA",
-      "2m2yZmJcbN4CspM7VapwQGSRwWuKpnN1VRARgZqUDNv2bnXnSXJabvnUFQw33viX1LM7F9kfXUGMUERREGjaXbLV",
-    ];
-    for (const pk of knownPKs) {
-      this.puppetWallets.push(
-        new PuppetWallet(h.keypairFrom(pk), await this.getBalances(h.keypairFrom(pk).publicKey, null))
-      );
-    }
-    //return await this._fillBoosterWallets(mainBalances);
-    return true;
   }
 
   private async _spawnAndFillBoosterWallets(mainBalances: BoosterBalances) {
@@ -334,23 +316,7 @@ class Booster {
         }
         h.debug(`[${this.shortName}] bundle #${i} succeeded when filling puppets`);
       }
-
-      /* gathers all bundles asyncrhonously and checks for results
-      const bundlePromises: Promise<boolean>[] = [];
-      for (const bundleTxs of bundlesOfTxs) {
-        bundlePromises.push(makeAndSendJitoBundle(bundleTxs, this.keypair, jitoTip.chanceOf95));
-      }
-      const results = await Promise.all(bundlePromises);
-      let puppetsFilled = true;
-      for (let i = 0; i < results.length; i++) {
-        h.debug(`bundle ${i} succeeded? ${results[i]}`)
-        puppetsFilled = puppetsFilled && results[i];
-      }
-      if (!puppetsFilled) {
-        console.error(`[${this.shortName}] Failed to send funds to puppets; one or more jito bundles failed to execute; no more details are known`);
-        return false
-      }
-      */
+      await this._consolidatePuppetFunds();
 
       await this.waitForPuppetBalanceChanges();
       return true;

@@ -14,7 +14,6 @@ import bs58 from 'bs58';
 import axios from 'axios';
 
 import { web3Connection } from '..';
-import { envConf } from '../config';
 import * as h from '../helpers';
 import * as sh from '../utils/solana_helpers';
 import * as c from '../const';

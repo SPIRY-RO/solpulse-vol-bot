@@ -2,7 +2,6 @@ import * as raySDK from '@raydium-io/raydium-sdk';
 import fs from 'fs';
 import path from 'path';
 
-import * as c from "../const"
 import * as h from "../helpers"
 import { envConf } from '../config';
 
