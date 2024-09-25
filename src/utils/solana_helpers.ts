@@ -1,11 +1,8 @@
 import * as solana from '@solana/web3.js';
 import * as raySDK from '@raydium-io/raydium-sdk';
 import * as spl from '@solana/spl-token';
-import { Wallet } from '@coral-xyz/anchor';
-import bs58 from 'bs58';
 import axios from 'axios';
 
-import { envConf } from '../config';
 import * as h from '../helpers';
 import * as c from '../const';
 import { web3Connection } from '..';

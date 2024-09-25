@@ -12,7 +12,7 @@ import BotAdminManager from "./classes/BotAdminManager";
 import { showUserBoosters } from "./actions/boosters-show-all";
 import { showBooster } from "./actions/booster-show";
 import {
-  referIfNeeded_thenShowStart, refreshWorkMenu, showWelcomeMessage as showWelcomeMessage,
+  referIfNeeded_thenShowStart, refreshWorkMenu, showWelcomeMessage,
   showWorkMenu,
 } from "./commands/start";
 import { showReferralMenu } from "./actions/referrals-menu";
@@ -37,14 +37,8 @@ export const web3Connection = new solana.Connection(envConf.HTTP_RPC_URL, { comm
 export const poolMaster_ = new PoolMaster();
 export const userManager = new BotAdminManager();
 export const statusChecker = new JitoStatusChecker();
-console.log(`\nBooster bot starting up`);
-//PkToAddress();
-//TestMisc();
-//TestCalcAmounts();
-//jupiterJitoTest();
-//TestRankBoostWorkflow();
 
-//console.log(bs58.encode(solana.Keypair.generate().secretKey));
+console.log(`\nKabal Booster bot starting up`);
 
 const stage = new Scenes.Stage([wizardReferralsClaim, wizardWalletSet, wizardSetAddr]);
 
@@ -60,7 +54,6 @@ telegraf.start(showWelcomeMessage);
 telegraf.help(showHelpMessage);
 telegraf.command("menu", showWorkMenu);
 telegraf.command(["boosters", "my_boosters", "my_boosts"], showUserBoosters);
-//telegraf.command(["stop_boost", "stop_booster"], stopBooster);
 
 /* Admin commands */
 //telegraf.command("stop_all", stopAllBoosters_admin);
@@ -128,9 +121,6 @@ telegraf.action(/\bdata(-\w+)+\b/g, (ctx: any) => {
   } else if (actionName === "rent") {
     const duration = args[2];
     rentBot(ctx, duration);
-    /*ctx.scene.enter(wizardSetTzLocation_name, {
-      senderId: senderId,
-    });*/
   } else {
     return answerCbQuerySafe(ctx, `Unknown action: ${actionName}! 👎`);
   }

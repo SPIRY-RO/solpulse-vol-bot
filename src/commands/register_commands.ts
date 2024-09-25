@@ -12,7 +12,7 @@ export async function registerCommands(ctx: Context) {
   await telegraf.telegram.setMyCommands([
     {
       command: 'start',
-      description: 'Pick token address',
+      description: 'Initialize Bot',
     },
     {
       command: 'menu',
