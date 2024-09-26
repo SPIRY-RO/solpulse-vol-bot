@@ -333,7 +333,7 @@ class Booster {
     for (const puppet of this.puppetWallets) {
       promises.push(this._consolidateSolOf(puppet));
       bundlesSoFar += 1;
-      if (bundlesSoFar % c.JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT) await h.sleep(1500);
+      if (bundlesSoFar % c.JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT) await h.sleep(1000);
     }
     return await Promise.all(promises);
   }
@@ -379,6 +379,7 @@ class Booster {
           instructions: [...transferInstrs, ...closeInstrs],
         }).compileToV0Message()
       );
+      
       tx.sign([puppet.keypair]);
       h.debug(`[${this.shortName}] closing token acc of ${puppet.shortAddr}`);
       const jitoResult = await makeAndSendJitoBundle([tx], puppet.keypair, jitoTip.average);

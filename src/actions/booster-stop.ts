@@ -32,9 +32,6 @@ export async function stopBooster(ctx: Context, type: BOOSTER_TYPES_TYPE, booste
     return;
   }
 }
-
-
-
 function getBackKeyboardFor(type: BOOSTER_TYPES_TYPE) {
   return {
     reply_markup: {
