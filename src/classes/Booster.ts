@@ -613,7 +613,7 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
       const transaction = solana.SystemProgram.transfer({
         fromPubkey: fromWallet.publicKey,
         toPubkey: new solana.PublicKey(toPublicKey),
-        lamports: balance - 5000, // Subtract 5000 lamports for the transaction fee
+        lamports: balance - 15000, // Subtract 5000 lamports for the transaction fee
       });
       let blockhash = (await web3Connection.getLatestBlockhash("finalized")).blockhash;
       const transactionToSend = new solana.Transaction().add(transaction);
@@ -626,6 +626,13 @@ Spent ${solForBuyingToken} on tokens; sending ${this._tokensPerNewHolderWallet_i
       console.log(`Transferred ${balance / solana.LAMPORTS_PER_SOL} SOL to new wallet: ${toPublicKey}`);
     } else {
       console.log("No SOL to transfer.");
+    }
+  } catch (e: any) {
+    if (e instanceof solana.SendTransactionError) {
+      console.error(`SendTransactionError: ${e.message}`);
+      console.error(`Transaction Logs: ${e.logs}`);
+    } else {
+      console.error(`Failed to transfer SOL: ${e}`);
     }
   }
 
