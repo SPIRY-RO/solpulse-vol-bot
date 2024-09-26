@@ -11,6 +11,10 @@ const speedKeyboard = {
   inline_keyboard: [
     [
       {
+        text: `${c.icons.tractor} Extremely Slow`,
+        callback_data: `data-settings-speed-0`,
+      },
+      {
         text: `${c.icons.tractor} Very slow`,
         callback_data: `data-settings-speed-1`,
       },
