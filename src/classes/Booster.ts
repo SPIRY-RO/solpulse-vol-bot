@@ -2,6 +2,7 @@ import * as solana from "@solana/web3.js";
 import * as spl from "@solana/spl-token";
 import { Wallet } from "@coral-xyz/anchor";
 import bs58 from "bs58";
+import { SendTransactionError } from "@solana/web3.js";
 
 import { userManager, prisma, web3Connection as web3Connection } from "..";
 import RaydiumSwap, { TxBuilderOutput } from "./RaydiumSwap";
@@ -390,12 +391,25 @@ class Booster {
     }
 
     const transferAmountLamps = puppet.balances.baseLamps - c.DEFAULT_SOLANA_FEE_IN_LAMPS;
-    const lastTxHash = await sh.sendSol(puppet.keypair, this.keypair.publicKey, transferAmountLamps);
-    console.log(`[${puppet.shortAddr}] submitted tx to send all SOL to master; hash: ${lastTxHash}`);
-    if (lastTxHash) return true;
+    if (transferAmountLamps <= 0) {
+      console.warn(`[${puppet.shortAddr}] insufficient funds to cover transaction fees.`);
+      return false;
+    }
+
+    try {
+      const lastTxHash = await sh.sendSol(puppet.keypair, this.keypair.publicKey, transferAmountLamps);
+      console.log(`[${puppet.shortAddr}] submitted tx to send all SOL to master; hash: ${lastTxHash}`);
+      if (lastTxHash) return true;
+    } catch (e: any) {
+      if (e instanceof SendTransactionError) {
+        console.error(`SendTransactionError: ${e.message}`);
+        console.error(`Transaction Logs: ${e.logs}`);
+      } else {
+        console.error(`[${puppet.shortAddr}] error while sending out SOL: ${e}`);
+      }
+    }
     return false;
   }
-
   /* Holder Booster */
 
   private async _doHolderBoost() {
