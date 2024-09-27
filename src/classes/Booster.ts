@@ -336,6 +336,16 @@ class Booster {
       bundlesSoFar += 1;
       if (bundlesSoFar % c.JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT) await h.sleep(1000);
     }
+    const latestBlockhash = (await web3Connection.getLatestBlockhash()).blockhash;
+    const tx = new solana.VersionedTransaction(
+      new solana.TransactionMessage({
+        payerKey: this.keypair.publicKey,
+        recentBlockhash: latestBlockhash,
+        instructions: [],
+      }).compileToV0Message()
+    );
+    tx.sign([this.keypair]);
+    await makeAndSendJitoBundle([tx], this.keypair, jitoTip.average);
     return await Promise.all(promises);
   }
 
