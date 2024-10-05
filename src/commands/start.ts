@@ -159,7 +159,7 @@ export async function showWelcomeMessage(ctx: Context) {
   const keyboard = [
     [
       {
-        text: "=== GET STARTED ===",
+        text: "=== CHOOSE FROM MENU BELOW ===",
         callback_data: "none",
       },
     ],
@@ -168,7 +168,7 @@ export async function showWelcomeMessage(ctx: Context) {
       callback_data: `token_address_wizard`,
     }],
     [{
-      text: `${c.icons.cashBankHouse} Your Wallet`,
+      text: `${c.icons.cashBankHouse} Wallet`,
       callback_data: `wallet`,
     }],
     [{
