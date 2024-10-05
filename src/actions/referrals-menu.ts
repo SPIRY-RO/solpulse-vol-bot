@@ -22,7 +22,8 @@ export async function showReferralMenu(ctx: Context) {
 
   let text = `${c.icons.handshake} Referrals ${c.icons.handshake}
 
-Get a share of profit from every time your reference rents our bot via your link!  Bot will generate your share upon rental payment.
+Get a share of profit from every time your referral rents our bot!
+Get them to start the bot via your link once, and bot will generate revenue for you every time they pay rent!
 
 ${c.icons.cashFaceTongue} Current referral share: ${REFERRAL_FEE_PERC}%
 (from every time users unlock the bot)
@@ -32,20 +33,13 @@ ${c.icons.salute} Your referrals: ${referrals.length}
 ${c.icons.chainLink} Your referral link:
 ${referralLink}
 
-${c.icons.cashBankHouse} Unclaimed rewards: ${user.unclaimedRefRewards} SOL
+${c.icons.cashBankHouse} All-time rewards: ${user.totalRefRewards} SOL
+(delivered straight into your in-bot wallet)
 `
 
   await tryEditOrReply(ctx, text, {
     reply_markup: {
       inline_keyboard: [
-        [{
-          text: `${c.icons.fingersCrossed} Claim`,
-          callback_data: `referrals_claim`,
-        }],
-        [{
-          text: `${c.icons.cashBankHouse} Your wallet`,
-          callback_data: `wallet`,
-        }],
         [{
           text: `${c.icons.backArrow} Back`,
           callback_data: `work_menu`,

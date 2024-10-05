@@ -8,11 +8,7 @@ import { WizardSessionData, WizardContext } from "telegraf/typings/scenes";
 import { telegraf, prisma, userManager, web3Connection } from ".";
 import { envConf } from "./config";
 import { ChatPermissions } from "telegraf/typings/core/types/typegram";
-import RaydiumSwap from './classes/RaydiumSwap';
 import * as c from './const';
-import { makeAndSendJitoBundle } from './utils/jito';
-import { User } from '@prisma/client';
-
 
 
 export type Argument = {
@@ -112,8 +108,9 @@ export async function tryReply(ctx: any, text: string, params?: {}) {
   try {
     return await ctx.reply(text, params);
   } catch (e: any) {
-    if (envConf.DEBUG_MODE)
-      console.warn(`Failed to do ctx.reply() for ${senderId}; ${e}`);
+    if (envConf.DEBUG_MODE) {
+      //console.warn(`Failed to do ctx.reply() for ${senderId}; ${e}`);
+    }
   }
 }
 
@@ -124,15 +121,17 @@ export async function tryEditOrReply(ctx: any, text: string, params?: {}) {
     try {
       return await ctx.editMessageText(text, params);
     } catch (e: any) {
-      if (envConf.DEBUG_MODE)
-        console.warn(`Failed to edit message for sender '${senderId}'; message '${prevMessageID}'; ${e}`);
+      if (envConf.DEBUG_MODE) {
+        //console.warn(`Failed to edit message for sender '${senderId}'; message '${prevMessageID}'; ${e}`);
+      }
     }
   }
   try {
     return await ctx.reply(text, params);
   } catch (e: any) {
-    if (envConf.DEBUG_MODE)
-      console.warn(`Failed to do ctx.reply() for ${senderId}' ${e}`);
+    if (envConf.DEBUG_MODE) {
+      //console.warn(`Failed to do ctx.reply() for ${senderId}' ${e}`);
+    }
   }
 }
 
@@ -143,8 +142,9 @@ export async function tryEdit(ctx: any, text: string, params?: {}) {
     try {
       return await ctx.editMessageText(text, params);
     } catch (e: any) {
-      if (envConf.DEBUG_MODE)
-        console.warn(`Failed to edit message for sender '${senderId}'; message '${prevMessageID}'; ${e}`);
+      if (envConf.DEBUG_MODE) {
+        //console.warn(`Failed to edit message for sender '${senderId}'; message '${prevMessageID}'; ${e}`);
+      }
     }
   }
 }
@@ -153,8 +153,9 @@ export async function trySend(chatId: number | string, text: string, params: {} 
   try {
     return await telegraf.telegram.sendMessage(chatId, text, params);
   } catch (e: any) {
-    if (envConf.DEBUG_MODE)
-      console.warn(`Failed to send message to '${chatId}'; message; ${e}`);
+    if (envConf.DEBUG_MODE) {
+      //console.warn(`Failed to send message to '${chatId}'; message; ${e}`);
+    }
   }
 }
 
@@ -343,45 +344,6 @@ export function getExpiryTsHoursFromNow(hoursUntilExpiration: number | string) {
 }
 
 
-export async function rewardReferrerOf(user: User, referralFeeSol: number) {
-  if (!referralFeeSol)
-    throw Error(`Can't reward referral with ${referralFeeSol} of SOL`);
-  try {
-    const referrer = await prisma.user.findUnique({
-      where: { tgID: user.referredByTgID }
-    })
-    if (!referrer) {
-      console.warn(`Attempting to reward referrer, but '${user.tgID}' is not referred!`);
-      return;
-    }
-    debug(`Rewarding referrer...`);
-    const userKP = keypairFrom(user.workWalletPK);
-    const raySwap = new RaydiumSwap(userKP, new solana.PublicKey(c.WSOL_MINT_ADDR));
-    const refRewardStorageWallet = walletFrom(envConf.REFERRAL_FEE_WALLET_PK);
-    const tx = await raySwap.getSolTransferTx(
-      null,
-      refRewardStorageWallet.publicKey,
-      referralFeeSol * solana.LAMPORTS_PER_SOL);
-    const result = await makeAndSendJitoBundle([tx], userKP);
-    if (result) {
-      await prisma.user.update({
-        where: { internalID: referrer.internalID },
-        data: { unclaimedRefRewards: referrer.unclaimedRefRewards + referralFeeSol },
-      });
-      console.info(`Moved ${referralFeeSol} SOL to referral wallet (${refRewardStorageWallet.publicKey.toBase58()}); belongs to referrer ${referrer.tgID}`);
-      return true;
-    } else {
-      console.error(`Tx to reward referrer failed; referrer TG ID: ${referrer.tgID}`);
-      return false;
-    }
-  } catch (e: any) {
-    console.error(`Caught error while trying to reward referrer ${user.referredByTgID}; ${e}`);
-    console.trace(e);
-    return false;
-  }
-}
-
-
 export function timingNotationToSeconds(notation: string) {
   let totalTime = 0;
   if (!notation) {
@@ -459,4 +421,8 @@ export async function getUserProfileLinkFrom(userID: number | string) {
 
 export function incrementByPercent(number: number, percentage: number): number {
   return Math.round(number + (number * percentage) / 100);
+}
+
+export function roundDown(value: number, decimals = 0) {
+  return Math.trunc(value * 10 ** decimals) / 10 ** decimals;
 }

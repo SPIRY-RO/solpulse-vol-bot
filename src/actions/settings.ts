@@ -11,10 +11,6 @@ const speedKeyboard = {
   inline_keyboard: [
     [
       {
-        text: `${c.icons.tractor} Extremely Slow`,
-        callback_data: `data-settings-speed-0`,
-      },
-      {
         text: `${c.icons.tractor} Very slow`,
         callback_data: `data-settings-speed-1`,
       },
@@ -88,8 +84,6 @@ export async function setSpeedSettings(ctx: any, speed: number | string) {
 
 
 
-
-
 const durationKeyboard = {
   inline_keyboard: [
     [
@@ -105,10 +99,6 @@ const durationKeyboard = {
         text: `3 Hours`,
         callback_data: `data-settings-duration-10800`,
       },
-      {
-        text: `12 Hours`,
-        callback_data: `data-settings-duration-43200`,
-      },
     ],
     [
       {
@@ -118,7 +108,6 @@ const durationKeyboard = {
     ]
   ],
 }
-
 
 export async function showDurationSettings(ctx: any) {
   h.answerCbQuerySafe(ctx);
@@ -156,6 +145,71 @@ export async function setDurationSettings(ctx: any, duration: number | string) {
 }
 
 
+
+const volumeParallelWalletsKeyboard = {
+  inline_keyboard: [
+    [
+      {
+        text: `2`,
+        callback_data: `data-settings-parallelVolume-2`,
+      },
+      {
+        text: `3`,
+        callback_data: `data-settings-parallelVolume-3`,
+      },
+      {
+        text: `4`,
+        callback_data: `data-settings-parallelVolume-4`,
+      },
+    ],
+    [
+      {
+        text: `${c.icons.backArrow} Back`,
+        callback_data: `data-boosterShow-volume`
+      }
+    ]
+  ],
+}
+
+
+export async function showVolumeParallelSettings(ctx: any) {
+  h.answerCbQuerySafe(ctx);
+  const userID = String(ctx.from.id);
+  const settings = await userManager.getOrCreateSettingsFor(userID);
+
+  await h.tryEditOrReply(ctx, `${c.icons.people} Number of wallets ${c.icons.people}
+
+How many wallets to use in parallel
+
+${c.icons.people} Current: ${settings.volumeParallelWallets}`, {
+    reply_markup: volumeParallelWalletsKeyboard,
+  });
+}
+
+
+export async function setVolumeParallelSettings(ctx: any, parallelWallets: number | string) {
+  if (isNaN(parallelWallets as number)) {
+    throw Error(`parallelWallets is NaN: ${parallelWallets}`);
+  }
+
+  h.answerCbQuerySafe(ctx);
+  const userID = String(ctx.from.id);
+  await prisma.settings.update({
+    where: {
+      ownerTgID: userID,
+    },
+    data: {
+      volumeParallelWallets: Number(parallelWallets),
+    }
+  });
+  await h.tryReply(ctx, `Number of wallets changed`);
+  await h.sleep(1500);
+  return await showVolumeParallelSettings(ctx);
+}
+
+
+
+/* Holder booster settings */
 
 export async function holderSettingsIncrease(ctx: any) {
   h.answerCbQuerySafe(ctx);
@@ -198,3 +252,143 @@ export async function holderSettingsDecrease(ctx: any) {
   return await showBooster(ctx, 'holders');
 }
 
+
+
+/* Rank booster settings */
+
+const rankParallelWalletsKeyboard = {
+  inline_keyboard: [
+    [
+      {
+        text: `10`,
+        callback_data: `data-settings-parallelRank-10`,
+      },
+      {
+        text: `15`,
+        callback_data: `data-settings-parallelRank-15`,
+      },
+      {
+        text: `20`,
+        callback_data: `data-settings-parallelRank-20`,
+      },
+    ],
+    [
+      {
+        text: `1`,
+        callback_data: `data-settings-parallelRank-1`,
+      },
+    ],
+    [
+      {
+        text: `${c.icons.backArrow} Back`,
+        callback_data: `data-boosterShow-rank`
+      }
+    ]
+  ],
+}
+
+
+export async function showRankParallelSettings(ctx: any) {
+  h.answerCbQuerySafe(ctx);
+  const userID = String(ctx.from.id);
+  const settings = await userManager.getOrCreateSettingsFor(userID);
+
+  await h.tryEditOrReply(ctx, `${c.icons.people} Number of wallets ${c.icons.people}
+
+How many market-makers to run in parallel.
+The more - the faster the rank will increase.
+
+${c.icons.people} Current: ${settings.rankParallelWallets}`, {
+    reply_markup: rankParallelWalletsKeyboard,
+  });
+}
+
+
+export async function setRankParallelSettings(ctx: any, parallelWallets: number | string) {
+  if (isNaN(parallelWallets as number)) {
+    throw Error(`parallelWallets is NaN: ${parallelWallets}`);
+  }
+
+  h.answerCbQuerySafe(ctx);
+  const userID = String(ctx.from.id);
+  await prisma.settings.update({
+    where: {
+      ownerTgID: userID,
+    },
+    data: {
+      rankParallelWallets: Number(parallelWallets),
+    }
+  });
+  await h.tryReply(ctx, `Number of wallets changed`);
+  await h.sleep(1500);
+  return await showRankParallelSettings(ctx);
+}
+
+
+const changeMakerFrequencyKeyboard = {
+  inline_keyboard: [
+    [
+      {
+        text: `20`,
+        callback_data: `data-settings-makers-20`,
+      },
+      {
+        text: `30`,
+        callback_data: `data-settings-makers-30`,
+      },
+      {
+        text: `40`,
+        callback_data: `data-settings-makers-40`,
+      },
+    ],
+    [
+      {
+        text: `8`,
+        callback_data: `data-settings-makers-8`,
+      },
+    ],
+    [
+      {
+        text: `${c.icons.backArrow} Back`,
+        callback_data: `data-boosterShow-rank`
+      }
+    ]
+  ],
+}
+
+export async function showChangeMakerFreqSettings(ctx: any) {
+  h.answerCbQuerySafe(ctx);
+  const userID = String(ctx.from.id);
+  const settings = await userManager.getOrCreateSettingsFor(userID);
+
+  await h.tryEditOrReply(ctx, `${c.icons.clockAntique} Fresh wallet interval ${c.icons.clockAntique}
+
+How often to change market makers?
+How many buys a market-maker makes, before it is replaced by a new unique one.
+The lower this number - the more unique market makers you'll get, but the slower the overall transaction speed be.
+
+${c.icons.clockAntique} Current: ${settings.rankRotateEveryNTx}`, {
+    reply_markup: changeMakerFrequencyKeyboard,
+  });
+}
+
+
+export async function setChangeMakerFreqSettings(ctx: any, changeEveryNBuys: number | string) {
+  if (isNaN(changeEveryNBuys as number)) {
+    throw Error(`changeEveryNBuys is NaN: ${changeEveryNBuys}`);
+  }
+
+  h.answerCbQuerySafe(ctx);
+  const userID = String(ctx.from.id);
+  await prisma.settings.update({
+    where: {
+      ownerTgID: userID,
+    },
+    data: {
+      rankRotateEveryNTx: Number(changeEveryNBuys),
+    }
+  });
+  await h.tryReply(ctx, `Changed fresh wallet interval`);
+  await h.sleep(1500);
+  return await showChangeMakerFreqSettings(ctx);
+}

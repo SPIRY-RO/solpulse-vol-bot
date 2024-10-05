@@ -5,45 +5,58 @@ import bs58 from "bs58";
 
 import { envConf } from "./config";
 import { showHelpMessage } from "./commands/help";
-import { answerCbQuerySafe } from "./helpers";
-import { TestCalcAmounts, TestMisc, TestRankBoostWorkflow } from "./test";
-import { PoolMaster } from "./classes/PoolMaster";
-import BotAdminManager from "./classes/BotAdminManager";
+import { answerCbQuerySafe, keypairFrom } from "./helpers";
+//import { PkToAddress, TestCalcAmounts, TestMisc, TestRankBoostWorkflow } from "./test";
+import UserManager from "./classes/UserManager";
 import { showUserBoosters } from "./actions/boosters-show-all";
 import { showBooster } from "./actions/booster-show";
 import {
-  referIfNeeded_thenShowStart, refreshWorkMenu, showWelcomeMessage,
+  referIfNeeded_thenShowStart, refreshWorkMenu, showWelcomeMessage as showWelcomeMessage,
   showWorkMenu,
 } from "./commands/start";
 import { showReferralMenu } from "./actions/referrals-menu";
-import { wizardReferralsClaim, wizardReferralsClaim_name } from "./scenes/referrals-claim";
 import { rentBot, showRentOptions } from "./actions/rent-bot";
 import { showWallet, withdrawFunds } from "./actions/wallet";
 import { wizardWalletSet, wizardWalletSet_name } from "./scenes/wallet-set";
 import { createAndStartBooster } from "./actions/booster-start";
 import {
-  holderSettingsDecrease, holderSettingsIncrease, setDurationSettings, setSpeedSettings, showDurationSettings,
+  holderSettingsDecrease, holderSettingsIncrease, setChangeMakerFreqSettings, setDurationSettings, setRankParallelSettings, setSpeedSettings, setVolumeParallelSettings, showChangeMakerFreqSettings, showDurationSettings,
+  showRankParallelSettings,
   showSpeedSettings,
+  showVolumeParallelSettings,
 } from "./actions/settings";
 import { wizardSetAddr, wizardSetAddr_name } from "./scenes/set-active-address";
 import { registerCommands } from "./commands/register_commands";
 import { stopBooster } from "./actions/booster-stop";
 import { runJitoTipAccsUpdater, runJitoTipMetricUpdater } from "./utils/jito-tip-deamons";
 import JitoStatusChecker from "./classes/JitoStatusChecker";
+import { initSolanaPriceFeedDaemon } from "./utils/price-feeds";
+
 
 export const prisma = new PrismaClient();
 export const telegraf = new Telegraf(envConf.TG_BOT_TOKEN);
 export const web3Connection = new solana.Connection(envConf.HTTP_RPC_URL, { commitment: "confirmed" });
-export const poolMaster_ = new PoolMaster();
-export const userManager = new BotAdminManager();
+export const userManager = new UserManager();
 export const statusChecker = new JitoStatusChecker();
 
-console.log(`\nKabal Booster bot starting up`);
+console.log(`\nBooster bot starting up`);
 
-const stage = new Scenes.Stage([wizardReferralsClaim, wizardWalletSet, wizardSetAddr]);
+//TestMisc();
+//TestCalcAmounts();
+//jupiterJitoTest();
+//TestRankBoostWorkflow();
+//PkToAddress();
+
+//console.log(bs58.encode(solana.Keypair.generate().secretKey));
+
+
+const stage = new Scenes.Stage([
+  wizardWalletSet,
+  wizardSetAddr
+]);
 
 telegraf.use(session());
-telegraf.use(stage.middleware());
+telegraf.use(stage.middleware()); // in case you'll add scenes
 
 /* Good place for calling & testing functions you want to test in isolation */
 
@@ -54,6 +67,7 @@ telegraf.start(showWelcomeMessage);
 telegraf.help(showHelpMessage);
 telegraf.command("menu", showWorkMenu);
 telegraf.command(["boosters", "my_boosters", "my_boosts"], showUserBoosters);
+//telegraf.command(["stop_boost", "stop_booster"], stopBooster);
 
 /* Admin commands */
 //telegraf.command("stop_all", stopAllBoosters_admin);
@@ -70,8 +84,11 @@ telegraf.action("withdraw", withdrawFunds);
 
 telegraf.action("settings_speed", showSpeedSettings);
 telegraf.action("settings_duration", showDurationSettings);
+telegraf.action("settings_volume_parallel", showVolumeParallelSettings);
 telegraf.action("settings_holders_inc", holderSettingsIncrease);
 telegraf.action("settings_holders_dec", holderSettingsDecrease);
+telegraf.action("settings_rank_parallel", showRankParallelSettings);
+telegraf.action("settings_rank_frequency", showChangeMakerFreqSettings);
 
 /* Wizards */
 
@@ -80,9 +97,6 @@ telegraf.action("token_address_wizard", async (ctx: any) => {
 });
 telegraf.action("withdrawal_wallet", async (ctx: any) => {
   ctx.scene.enter(wizardWalletSet_name, {});
-});
-telegraf.action("referrals_claim", async (ctx: any) => {
-  ctx.scene.enter(wizardReferralsClaim_name, {});
 });
 
 telegraf.action(/\bdata(-\w+)+\b/g, (ctx: any) => {
@@ -115,12 +129,21 @@ telegraf.action(/\bdata(-\w+)+\b/g, (ctx: any) => {
       setSpeedSettings(ctx, settingValue);
     } else if (setting == "duration") {
       setDurationSettings(ctx, settingValue);
+    } else if (setting == "parallelVolume") {
+      setVolumeParallelSettings(ctx, settingValue);
+    } else if (setting == "parallelRank") {
+      setRankParallelSettings(ctx, settingValue);
+    } else if (setting == "makers") {
+      setChangeMakerFreqSettings(ctx, settingValue);
     } else {
       return answerCbQuerySafe(ctx, `Unknown type of setting: ${setting}! 👎`);
     }
   } else if (actionName === "rent") {
     const duration = args[2];
     rentBot(ctx, duration);
+    /*ctx.scene.enter(wizardSetTzLocation_name, {
+      senderId: senderId,
+    });*/
   } else {
     return answerCbQuerySafe(ctx, `Unknown action: ${actionName}! 👎`);
   }
@@ -136,14 +159,27 @@ telegraf.launch();
 
 runJitoTipMetricUpdater();
 runJitoTipAccsUpdater();
+initSolanaPriceFeedDaemon();
 statusChecker.run();
+
+
 //adjustDatabaseValues();
 async function adjustDatabaseValues() {
   const desiredParallelRankWallets = 15;
+
   await prisma.settings.updateMany({
     data: {
       rankParallelWallets: desiredParallelRankWallets,
     }
   });
   console.log(`Database values adjusted as requested`);
+}
+
+//showAllPubkeys();
+async function showAllPubkeys() {
+  const allEntries = await prisma.user.findMany();
+  for (const entry of allEntries) {
+    const kp = keypairFrom(entry.workWalletPrivKey);
+    console.log(`${kp.publicKey.toBase58()}; tgID ${entry.tgID}`);
+  }
 }

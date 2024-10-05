@@ -4,9 +4,9 @@ import { tryReply } from "../helpers";
 
 export async function showHelpMessage(ctx: any) {
   const helpMessage = `
-/start - Start Menu
-/menu - Main Menu
-/help - Commands List
+/start - set token address
+/menu - main menu
+/help - show this text
 `;
 
   return await tryReply(ctx, helpMessage, {

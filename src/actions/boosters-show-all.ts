@@ -1,7 +1,7 @@
 import { Context } from "telegraf";
 
 import { prisma, userManager } from "..";
-import Booster from "../classes/Booster";
+import BoosterBase from "../classes/boosters/base";
 import { DEF_MESSAGE_OPTS } from "../config";
 import { answerCbQuerySafe, tryEditOrReply, tryReply } from "../helpers";
 import { workMenuBackButton, workMenuBackButtonKeyboard } from "../commands/start";
@@ -9,6 +9,9 @@ import { workMenuBackButton, workMenuBackButtonKeyboard } from "../commands/star
 
 export async function showUserBoosters(ctx: Context) {
   answerCbQuerySafe(ctx);
+  return;
+
+/*
   const user = await userManager.getOrCreateUser(ctx.from?.id);
   const boosters = await prisma.booster.findMany({where: {
     ownerTgID: user.tgID, isActive: true,
@@ -34,5 +37,6 @@ export async function showUserBoosters(ctx: Context) {
     reply_markup: { inline_keyboard: boostersKeyboard },
     ...DEF_MESSAGE_OPTS
   });
+  */
 }
 

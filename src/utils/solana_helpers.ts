@@ -1,11 +1,305 @@
 import * as solana from '@solana/web3.js';
 import * as raySDK from '@raydium-io/raydium-sdk';
 import * as spl from '@solana/spl-token';
+import bs58 from 'bs58';
 import axios from 'axios';
 
+import { web3Connection } from '..';
+import { envConf } from '../config';
 import * as h from '../helpers';
 import * as c from '../const';
-import { web3Connection } from '..';
+import { makeAndSendJitoBundle } from './jito';
+
+
+
+/* Auto-transacting functions */
+
+export async function sendSol(
+  fromKeypair: solana.Keypair,
+  toAddr: string | solana.PublicKey,
+  amountLamps: string | number | bigint | null,
+) {
+  if (typeof toAddr === "string")
+    toAddr = new solana.PublicKey(toAddr);
+  amountLamps = BigInt(parseInt(amountLamps as string));
+
+  const tag = `[sol:${h.getShortAddr(fromKeypair.publicKey)}->${h.getShortAddr(toAddr)}]`;
+
+  let currentAttempt = 0;
+  const maxAttempts = 10;
+  while (currentAttempt < maxAttempts) {
+    if (currentAttempt != 0) {
+      const currentBalance = await getSolBalance(fromKeypair.publicKey, true);
+      if (currentBalance && currentBalance < amountLamps + BigInt(c.DEFAULT_SOLANA_FEE_IN_LAMPS)) {
+        const newAmount = BigInt(currentBalance - c.DEFAULT_SOLANA_FEE_IN_LAMPS);
+        h.debug(`${tag} trying to send more SOL than possible(${amountLamps}); sending all available SOL instead(${newAmount})`);
+        amountLamps = newAmount;
+      }
+    }
+
+    const transaction = new solana.Transaction().add(
+      solana.SystemProgram.transfer({
+        fromPubkey: fromKeypair.publicKey,
+        toPubkey: toAddr,
+        lamports: amountLamps,
+      })
+    );
+
+    try {
+
+      h.debug(`${tag} attempt ${currentAttempt + 1}; amount ${amountLamps}`);
+      const txHash = await solana.sendAndConfirmTransaction(web3Connection, transaction, [fromKeypair]);
+      h.debug(`${tag} tx sent, awaiting confirmation...`);
+
+      const confirmation = await web3Connection.getSignatureStatus(txHash);
+      if (confirmation?.value?.err) {
+        throw new Error(`Error: ${tag} tx failed: ${JSON.stringify(confirmation.value?.err)}`);
+      }
+
+      h.debug(`${tag} tx confirmed! hash: ${txHash}`);
+      return txHash;
+    } catch (error: any) {
+      currentAttempt += 1;
+      console.warn(`${tag} attempt ${currentAttempt}, error: ${error.message}`);
+
+      if (currentAttempt >= maxAttempts) {
+        console.error(`${tag} max attempts reached; tx failed`);
+        return null;
+      }
+      await h.sleep(1000);
+    }
+  }
+}
+
+
+export async function sendAllSol(fromKeypair: solana.Keypair, toAddr: string | solana.PublicKey) {
+  if (typeof toAddr === "string")
+    toAddr = new solana.PublicKey(toAddr);
+  const balance = await getSolBalance(fromKeypair.publicKey, true) || 0;
+  const amountInLamps = balance - c.DEFAULT_SOLANA_FEE_IN_LAMPS;
+
+  const txHash = await sendSol(fromKeypair, toAddr, amountInLamps);
+  return txHash;
+}
+
+
+export async function sendSol_waitForBalChange(
+  senderKeypair: solana.Keypair,
+  receiverAddr: solana.PublicKey,
+  amountLamps: string | number | bigint | null,
+  checkReceiverBalance = false,
+): Promise<boolean> {
+  const balanceCheckTimeout = 90 * 1000;
+  const tag = `[${h.getShortAddr(senderKeypair.publicKey)}->${h.getShortAddr(receiverAddr)}]`;
+  let checkBalanceOfAddr = senderKeypair.publicKey;
+  if (checkReceiverBalance)
+    checkBalanceOfAddr = receiverAddr;
+  let balance = await getSolBalance(checkBalanceOfAddr, true);
+  if (balance === null) {
+    h.debug(`${tag} failed to fetch initial balance; aborting SOL transfer`);
+    return false;
+  }
+
+  const txHash = await sendSol(senderKeypair, receiverAddr, amountLamps);
+  if (!txHash) {
+    h.debug(`${tag} failed to submit SOL transfer tx`);
+    return false;
+  }
+  const { success } = await waitForBalanceChange(
+    balance, checkBalanceOfAddr, true, balanceCheckTimeout);
+  if (success) {
+    h.debug(`${tag} tx succeeded; hash: ${txHash.toString()}`);
+    return true;
+  } else {
+    console.error(`${tag} no balance change registered; assuming the tx has failed`);
+    return false;
+  }
+}
+
+
+export async function sendAllSol_waitForBalChange(
+  senderKeypair: solana.Keypair,
+  receiverAddr: solana.PublicKey,
+  checkReceiverBalance = false,
+): Promise<boolean> {
+  const balanceCheckTimeout = 90 * 1000;
+  const tag = `[${h.getShortAddr(senderKeypair.publicKey)}->${h.getShortAddr(receiverAddr)}]`;
+  let checkBalanceOfAddr = senderKeypair.publicKey;
+  if (checkReceiverBalance)
+    checkBalanceOfAddr = receiverAddr;
+  let balance = await getSolBalance(checkBalanceOfAddr, true);
+  if (balance === null) {
+    h.debug(`${tag} failed to fetch initial balance; aborting SOL transfer`);
+    return false;
+  }
+
+  const txHash = await sendAllSol(senderKeypair, receiverAddr);
+  if (!txHash) {
+    h.debug(`${tag} failed to submit SOL transfer tx`);
+    return false;
+  }
+  const { success } = await waitForBalanceChange(
+    balance, checkBalanceOfAddr, true, balanceCheckTimeout);
+  if (success) {
+    h.debug(`${tag} tx succeeded; hash: ${txHash.toString()}`);
+    return true;
+  } else {
+    console.error(`${tag} no balance change registered; assuming the tx has failed`);
+    return false;
+  }
+}
+
+
+export async function ensureTokenAccountExists(keypair: solana.Keypair, tokenAddr: solana.PublicKey) {
+  const tag = `[${h.getShortAddr(keypair.publicKey)}]`
+  h.debug(`${tag} making a small swap TX to ensure that token account is open...`);
+  const builtTx = await getSwapTx(keypair, c.WSOL_MINT_ADDR, tokenAddr, 0.00001);
+  if (!builtTx) {
+    h.debug(`${tag} can't build swap TX when trying to open token account; aborting`);
+    return false;
+  }
+  const success = await makeAndSendJitoBundle([builtTx.tx], keypair);
+  if (!success) {
+    h.debug(`${tag} initial swap TX that was supposed to ensure we've an open token account failed; aborting`);
+    return false;
+  }
+  h.debug(`${tag} swap TX succeeded; token account is now definitely open`);
+  return true;
+}
+
+
+/* Transaction Builders */
+
+export type SwapTxBuilderOutput = {
+  tx: solana.VersionedTransaction,
+  estimates: JupiterEstimates,
+}
+
+export async function getSwapTx(
+  keypair: solana.Keypair,
+  fromToken: string | solana.PublicKey,
+  toToken: string | solana.PublicKey,
+  amountFrom_inSol: number | string,
+  slippagePercent?: number | null,
+): Promise<SwapTxBuilderOutput | null> {
+  try {
+    if (!slippagePercent)
+      slippagePercent = c.SWAP_SLIPPAGE_PERCENT;
+    if (typeof (fromToken) !== "string")
+      fromToken = fromToken.toBase58();
+    if (typeof (toToken) !== "string")
+      toToken = toToken.toBase58();
+
+    h.debug(`[${h.getShortAddr(fromToken)}->${h.getShortAddr(toToken)}] getting estimates`);
+    const estimates = await calcAmountOut(fromToken, toToken, amountFrom_inSol, slippagePercent);
+    if (!estimates.rawResponseData) {
+      console.error(`[${h.getShortAddr(fromToken)}->${h.getShortAddr(toToken)}] failed to get quote; not transacting`);
+      return null;
+    }
+
+    const jupiterSwapResp = await axios({
+      method: "POST",
+      url: `${c.JUPITER_API_URL}/swap`,
+      data: {
+        quoteResponse: estimates.rawResponseData,
+        userPublicKey: keypair.publicKey.toString(),
+        wrapAndUnwrapSol: true,
+        prioritizationFeeLamports: c.SWAP_PRIORITY_FEE_IN_LAMPS,
+      },
+    });
+    const { swapTransaction } = jupiterSwapResp.data;
+    // Deserialize the transaction
+    const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+    const tx = solana.VersionedTransaction.deserialize(swapTransactionBuf);
+    tx.sign([keypair]);
+    return { tx, estimates };
+
+  } catch (e: any) {
+    h.debug(`[${h.getShortAddr(fromToken)}->${h.getShortAddr(toToken)}] error while building swap tx: ${e}`);
+    if (e.response) {
+      // The request was made and the server responded with a non-2xx status code
+      console.error(e.response.data);
+      console.error(e.response.status);
+      console.error(e.response.headers);
+    } else {
+      console.trace(e);
+    }
+    return null;
+  }
+}
+
+
+
+/* Instruction Builders */
+
+export async function getInstr_transferToken_openReceiverAccIfNeeded(
+  senderKeypair: solana.Keypair,
+  receiverAddr: solana.PublicKey,
+  tokenAddr: string | solana.PublicKey,
+  tokenAmount_inSol: string | number | null,
+  tokenAmount_inLamps?: string | number | bigint | null,
+) {
+  if (typeof (tokenAddr) === "string")
+    tokenAddr = new solana.PublicKey(tokenAddr);
+  const tag = `[token:${h.getShortAddr(senderKeypair.publicKey)}->${h.getShortAddr(receiverAddr)}]`;
+  if ((!tokenAmount_inSol && !tokenAmount_inLamps) || (tokenAmount_inSol && tokenAmount_inLamps)) {
+    throw new SyntaxError(`${tag} You need to specify token amount either in solana or lamports`);
+  }
+  if (tokenAmount_inSol)
+    tokenAmount_inLamps = await tokenFromSolToLamps(tokenAmount_inSol, tokenAddr);
+  else
+    tokenAmount_inLamps = BigInt(tokenAmount_inLamps as string);
+
+  const existingSenderTokenAcc = await spl.getOrCreateAssociatedTokenAccount(web3Connection, senderKeypair, tokenAddr, senderKeypair.publicKey);
+  const associatedDestinationTokenAddr = await spl.getAssociatedTokenAddress(
+    tokenAddr,
+    receiverAddr,
+  );
+  const receiverTokenAcc = await getTokenAcc(tokenAddr, receiverAddr);
+
+  const instructions: solana.TransactionInstruction[] = [];
+  if (!receiverTokenAcc?.pubkey) {
+    instructions.push(spl.createAssociatedTokenAccountInstruction(
+      senderKeypair.publicKey,
+      associatedDestinationTokenAddr,
+      receiverAddr,
+      tokenAddr,
+    ));
+  }
+  instructions.push(spl.createTransferInstruction(
+    existingSenderTokenAcc.address,
+    associatedDestinationTokenAddr,
+    senderKeypair.publicKey,
+    tokenAmount_inLamps,
+  ));
+  h.debug(`${tag} made instructions to send ${tokenAmount_inSol || `${tokenAmount_inLamps} lamports of`} tokens${(!receiverTokenAcc?.pubkey ? ` & open receiver token acc` : '')}`);
+  return instructions;
+}
+
+
+export async function getInstr_closeSenderAcc(
+  senderKeypair: solana.Keypair,
+  sendFreedSolToAddr: solana.PublicKey,
+  tokenAddr: string | solana.PublicKey,
+) {
+  if (typeof (tokenAddr) === "string")
+    tokenAddr = new solana.PublicKey(tokenAddr);
+  const senderTokenAcc = await getTokenAcc(tokenAddr, senderKeypair.publicKey);
+  //const senderTokenAcc = await spl.getOrCreateAssociatedTokenAccount(web3Connection, senderKeypair, tokenAddr, senderKeypair.publicKey);
+  if (!senderTokenAcc) {
+    console.warn(`[${h.getShortAddr(senderKeypair.publicKey)}] doesn't have token acc, but tried closing it; token: ${h.getShortAddr(tokenAddr)}`);
+    return null;
+  }
+
+  const closeTokenAccInstr = spl.createCloseAccountInstruction(
+    //senderTokenAcc.address,
+    senderTokenAcc.pubkey,
+    sendFreedSolToAddr,
+    senderKeypair.publicKey,
+  );
+  return [closeTokenAccInstr];
+}
+
 
 
 
@@ -14,7 +308,7 @@ export async function calcAmountOut(
   toToken: string | solana.PublicKey,
   tokenAmountIn_inSol: number | string,
   slippagePercent?: number | null,
-) {
+): Promise<JupiterEstimates> {
   if (!slippagePercent)
     slippagePercent = c.SWAP_SLIPPAGE_PERCENT;
   if (typeof (fromToken) !== "string")
@@ -50,15 +344,15 @@ export async function calcAmountOut(
 
     const { inAmount, outAmount, otherAmountThreshold, priceImpactPct } = response.data;
 
-    const decimals = {in: 9, out: 9}
+    const decimals = { in: 9, out: 9 }
     if (fromToken !== c.WSOL_MINT_ADDR)
       decimals.in = await getTokenDecimals(fromToken);
     if (toToken !== c.WSOL_MINT_ADDR)
       decimals.out = await getTokenDecimals(toToken);
 
-    const amountIn_inSol = Number((Number(inAmount || 0) / 10**decimals.in).toFixed(decimals.in));
-    const amountOut_inSol = Number((Number(outAmount || 0) / 10**decimals.out).toFixed(decimals.out));
-    const minAmountOut_inSol = Number((Number(otherAmountThreshold || 0) / 10**decimals.out).toFixed(decimals.out));
+    const amountIn_inSol = Number((Number(inAmount || 0) / 10 ** decimals.in).toFixed(decimals.in));
+    const amountOut_inSol = Number((Number(outAmount || 0) / 10 ** decimals.out).toFixed(decimals.out));
+    const minAmountOut_inSol = Number((Number(otherAmountThreshold || 0) / 10 ** decimals.out).toFixed(decimals.out));
     /*
     h.debug(`Jupiter quote:`);
     h.debug(`Token in: ${fromToken}`);
@@ -76,10 +370,24 @@ export async function calcAmountOut(
     }
   } catch (e: any) {
     console.error(`[${h.getShortAddr(fromToken)}->${h.getShortAddr(toToken)}] error when fetching quote: ${e}`);
-    console.trace(e);
+    if (e.response) {
+      // The request was made and the server responded with a non-2xx status code
+      console.error(e.response.data);
+      console.error(e.response.status);
+      console.error(e.response.headers);
+    } else {
+      console.trace(e);
+    }
     h.debug(`Returning empty estimates`);
     return { ...emptyEstimates };
   }
+}
+export type JupiterEstimates = {
+  amountIn_inSol: number,
+  amountOut_inSol: number,
+  minAmountOut_inSol: number,
+  priceImpact: number,
+  rawResponseData: any,
 }
 const emptyEstimates = {
   amountIn_inSol: 0,
@@ -87,6 +395,36 @@ const emptyEstimates = {
   minAmountOut_inSol: 0,
   priceImpact: 0,
   rawResponseData: null,
+}
+
+
+export async function waitForBalanceChange(
+  initialBalance: number, address: string | solana.PublicKey, inLamps = false, timeoutOverride?: number,
+) {
+  let timeout = timeoutOverride || 45 * 1000;
+  if (typeof (address) === "string") {
+    address = new solana.PublicKey(address);
+  }
+  let currentBalance = initialBalance;
+  const startedAt = Date.now();
+  while (initialBalance == currentBalance) {
+    const newBalance = await getSolBalance(address, inLamps);
+    if (newBalance !== null)
+      currentBalance = newBalance;
+    else
+      h.debug(`[${h.getShortAddr(address)}] received empty(${newBalance}) balance; ignoring`);
+    await h.sleep(1000);
+    if (Date.now() > startedAt + timeout) {
+      h.debug(`[${h.getShortAddr(address)}] balance check timed out after ${timeout / 1000}s`);
+      if (!inLamps)
+        currentBalance = Number(currentBalance);
+      return { balance: currentBalance, success: false };
+    }
+  }
+  h.debug(`[${h.getShortAddr(address)}] balance changed: ${initialBalance} -> ${currentBalance}`);
+  if (!inLamps)
+    currentBalance = Number(currentBalance);
+  return { balance: (inLamps ? currentBalance : Number(currentBalance)), success: true }
 }
 
 
@@ -137,16 +475,20 @@ export async function canTokenBeTraded(tokenAddr: string | solana.PublicKey) {
 }
 
 
-
 export async function getTokenAcc(tokenAddr: string | solana.PublicKey, walletAddr: string | solana.PublicKey) {
   if (typeof (tokenAddr) === "string")
     tokenAddr = new solana.PublicKey(tokenAddr);
   if (typeof (walletAddr) === "string")
     walletAddr = new solana.PublicKey(walletAddr);
-  for (const acc of await getTokenAccsAll(walletAddr)) {
-    if (acc.accountInfo.mint.equals(tokenAddr)) {
-      return acc;
+  try {
+    for (const acc of await getTokenAccsAll(walletAddr)) {
+      if (acc.accountInfo?.mint?.equals(tokenAddr)) {
+        return acc;
+      }
     }
+  } catch (e: any) {
+    h.debug(`[${h.getShortAddr(walletAddr)}] failed to get token acc addr; token: ${tokenAddr.toBase58()}; error: ${e}`);
+    return null;
   }
   return null;
   /* Alternative approach; throws an error if the account doesn't exist
@@ -181,7 +523,7 @@ export async function getTokenAccBalance(tokenAccount: solana.PublicKey): Promis
     return {
       amount: '',
       decimals: 0,
-      uiAmount: null
+      uiAmount: 0,
     }
   }
 }
@@ -195,116 +537,58 @@ export async function getSolBalance(address: string | solana.PublicKey, inLamps 
       return balanceLamps;
     return balanceLamps / solana.LAMPORTS_PER_SOL;
   } catch (e: any) {
-    console.error(`Error while getting wallet balance: ${e}`);
+    console.error(`[${h.getShortAddr(address)}] error while getting balance: ${e}`);
+    return null;
+  }
+}
+
+
+
+export async function getTokenValueInSol(tokenAmountSol: number, tokenAddr: string | solana.PublicKey) {
+  if (tokenAmountSol == 0)
+    return 0;
+  if (typeof (tokenAddr) === "string")
+    tokenAddr = new solana.PublicKey(tokenAddr);
+  try {
+    const estimates = await calcAmountOut(tokenAddr.toBase58(), c.WSOL_MINT_ADDR, tokenAmountSol);
+    const tokenValueInSol = estimates?.minAmountOut_inSol;
+    //console.log(`token value in SOL: ${tokenValueInSol}`);
+    return tokenValueInSol || 0;
+  } catch (e: any) {
+    console.error(`Error in token -> SOL estimation: ${e}`);
+    return 0;
+  }
+}
+
+export async function getSolValueInToken(solAmount_inSol: string | number, tokenAddr: string | solana.PublicKey) {
+  if (typeof (tokenAddr) === "string")
+    tokenAddr = new solana.PublicKey(tokenAddr);
+  try {
+    const estimates = await calcAmountOut(c.WSOL_MINT_ADDR, tokenAddr.toBase58(), solAmount_inSol);
+    //console.log(estimates);
+    const solValueInToken = Number(estimates?.amountOut_inSol);
+    //console.log(`SOL value in token: ${solValueInToken}`);
+    return solValueInToken || 0;
+  } catch (e: any) {
+    console.error(`Error in SOL -> token estimation: ${e}`);
     return 0;
   }
 }
 
 
-/* Instruction Builders */
-
-export async function getInstr_transferToken_openReceiverAccIfNeeded(
-  senderKeypair: solana.Keypair,
-  receiverAddr: solana.PublicKey,
-  tokenAddr: string | solana.PublicKey,
-  tokenAmount_inSol: string | number | null,
-  tokenAmount_inLamps?: string | number | bigint | null,
-) {
-  if (typeof (tokenAddr) === "string")
-    tokenAddr = new solana.PublicKey(tokenAddr);
-
-  if ((!tokenAmount_inSol && !tokenAmount_inLamps) || (tokenAmount_inSol && tokenAmount_inLamps)) {
-    throw new SyntaxError(`You need to specify token amount either in solana or lamports`);
-  }
-  if (tokenAmount_inSol)
-    tokenAmount_inLamps = await tokenFromSolToLamps(tokenAmount_inSol, tokenAddr);
-  else
-    tokenAmount_inLamps = BigInt(tokenAmount_inLamps as string);
-  const existingSenderTokenAcc = await spl.getOrCreateAssociatedTokenAccount(web3Connection, senderKeypair, tokenAddr, senderKeypair.publicKey);
-  const associatedDestinationTokenAddr = await spl.getAssociatedTokenAddress(
-    tokenAddr,
-    receiverAddr,
-  );
-  const receiverTokenAcc = await getTokenAcc(tokenAddr, receiverAddr);
-
-  const instructions: solana.TransactionInstruction[] = [];
-  if (!receiverTokenAcc?.pubkey) {
-    instructions.push(spl.createAssociatedTokenAccountInstruction(
-      senderKeypair.publicKey,
-      associatedDestinationTokenAddr,
-      receiverAddr,
-      tokenAddr,
-    ));
-  }
-  instructions.push(spl.createTransferInstruction(
-    existingSenderTokenAcc.address,
-    associatedDestinationTokenAddr,
-    senderKeypair.publicKey,
-    tokenAmount_inLamps,
-  ));
-  return instructions;
-}
-
-
-export async function getInstr_closeSenderAcc(
-  senderKeypair: solana.Keypair,
-  sendFreedSolToAddr: solana.PublicKey,
-  tokenAddr: string | solana.PublicKey,
-) {
-  if (typeof (tokenAddr) === "string")
-    tokenAddr = new solana.PublicKey(tokenAddr);
-  const senderTokenAcc = await getTokenAcc(tokenAddr, senderKeypair.publicKey);
-  //const senderTokenAcc = await spl.getOrCreateAssociatedTokenAccount(web3Connection, senderKeypair, tokenAddr, senderKeypair.publicKey);
-  if (!senderTokenAcc) {
-    console.warn(`[${h.getShortAddr(senderKeypair.publicKey)}] doesn't have token acc, but tried closing it; token: ${h.getShortAddr(tokenAddr)}`);
-    return null;
-  }
-
-  const closeTokenAccInstr = spl.createCloseAccountInstruction(
-    //senderTokenAcc.address,
-    senderTokenAcc.pubkey,
-    sendFreedSolToAddr,
-    senderKeypair.publicKey,
-  );
-  return [closeTokenAccInstr];
-}
-
-
-/* Full transaction functions */
-
-export async function sendSol(
-  senderKeypair: solana.Keypair,
-  receiverAddr: solana.PublicKey,
-  amountLamps: string | number | bigint | null,
-) {
-  amountLamps = BigInt(amountLamps as string);
+export async function tryGetRentExemptionFee(address: solana.PublicKey | string, inLamports = false) {
+  if (typeof (address) === "string")
+    address = new solana.PublicKey(address);
   try {
-    const solTransferInstr = [
-      solana.SystemProgram.transfer({
-        fromPubkey: senderKeypair.publicKey,
-        toPubkey: receiverAddr,
-        lamports: amountLamps,
-      })
-    ];
-    const tx3 = new solana.VersionedTransaction(
-      new solana.TransactionMessage({
-        payerKey: senderKeypair.publicKey,
-        recentBlockhash: (await web3Connection.getLatestBlockhash()).blockhash,
-        instructions: solTransferInstr,
-      }).compileToV0Message()
-    );
-    tx3.sign([senderKeypair]);
-
-    h.debug(`[${h.getShortAddr(senderKeypair.publicKey)}] sending ${amountLamps.toString()} lamports of SOL to ${receiverAddr.toBase58()}`);
-    const txHash = await web3Connection.sendTransaction(tx3, {
-      maxRetries: 5,
-      skipPreflight: false,
-    })
-    h.debug(`[${h.getShortAddr(senderKeypair.publicKey)}] tx submitted: ${txHash}`);
-    return txHash;
+    const accountInfo = await web3Connection.getAccountInfo(address);
+    const accountLength = accountInfo?.data.length || 0;
+    const rentExemptionLamp = await web3Connection.getMinimumBalanceForRentExemption(accountLength);
+    if (inLamports)
+      return rentExemptionLamp;
+    else
+      return rentExemptionLamp / solana.LAMPORTS_PER_SOL;
   } catch (e: any) {
-    console.error(`[${h.getShortAddr(senderKeypair.publicKey)}] error while sending out SOL: ${e}`);
-    console.trace(e);
-    return null;
+    console.warn(`Failed to get rent-exemption fee; defaulting to 0; error: ${e}`);
+    return 0;
   }
 }

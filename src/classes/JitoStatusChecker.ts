@@ -160,9 +160,9 @@ class JitoStatusChecker {
         console.error(e.response.data);
         console.error(e.response.status);
         console.error(e.response.headers);
-        return null;
+      } else {
+        console.trace(e);
       }
-      console.trace(e);
       return null;
     }
   }

@@ -4,10 +4,12 @@ import axios from "axios";
 import * as h from "../helpers";
 import { searchClient } from "./jito";
 
-const JITO_TIP_ACC_REFETCH_INTERVAL = 60 * 1000;
-const JITO_TIP_STAT_CHECK_INTERVAL = 15 * 1000;
+const JITO_TIP_ACC_REFETCH_INTERVAL = 120 * 1000;
+const JITO_TIP_STAT_CHECK_INTERVAL = 30 * 1000;
 const TIP_STATS_API_URL = "http://bundles-api-rest.jito.wtf/api/v1/bundles/tip_floor";
-const OVER_99_INCREMENT_FACTOR = 1.5;
+const OVER_99_INCREMENT_FACTOR = 1.15;
+
+const AVG_TIP_MAX_LIMIT = 500000;
 
 
 
@@ -55,9 +57,13 @@ async function fetchTipFloorData(): Promise<void> {
 
 
 async function calcAverageTip() {
-  const newAvgTip = await getAverageJitoTip();
+  let newAvgTip = await getAverageJitoTip();
   if (!newAvgTip)
     return;
+  if (newAvgTip.lamps > AVG_TIP_MAX_LIMIT) {
+    //console.warn(`[jito] average tip is too high(${newAvgTip.lamps}); capping it at max ${AVG_TIP_MAX_LIMIT} lamports`);
+    newAvgTip = { lamps: AVG_TIP_MAX_LIMIT, sol: h.roundDown(AVG_TIP_MAX_LIMIT / solana.LAMPORTS_PER_SOL, 9) }
+  }
   jitoTip.average = newAvgTip.lamps;
   jitoTip.average_inSol = newAvgTip.sol;
 }
@@ -82,8 +88,16 @@ async function getAverageJitoTip() {
     const averageTip_sol = Math.round((averageTip_lamps / solana.LAMPORTS_PER_SOL) * 100000) / 100000;
     //h.debug(`[jito-tip] Average tip: ${averageTip_sol} SOL`);
     return { lamps: averageTip_lamps, sol: averageTip_sol };
-  } catch (error) {
-    console.error(`[jito-tip] Error when calculating average tip: ${error}`);
+  } catch (e: any) {
+    console.error(`[jito-tip] Error when calculating average tip:`);
+    if (e.response) {
+      // The request was made and the server responded with a non-2xx status code
+      console.error(e.response.data);
+      console.error(e.response.status);
+      console.error(e.response.headers);
+    } else {
+      console.trace(e);
+    }
     return null;
   }
 }
@@ -172,3 +186,4 @@ interface JitoBundle {
   transactions: string[];
   landedTipLamports: number;
 };
+

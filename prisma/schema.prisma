@@ -14,31 +14,33 @@ datasource db {
 model Booster {
   internalID            String @id @default(auto()) @map("_id") @db.ObjectId
   ownerTgID             String @default("")
-  tokenAddress          String
   type                  String
-  freshWalletPK         String @default("")
-  activeWalletPK        String
-  activeWalletAddr      String
-  lastActiveWalletPK    String @default("")
-  isActive              Boolean @default(true)
-  cachedTotalTxs        Int     @default(0)
-  cachedTotalHolders    Int     @default(0)
-  cachedBuyVolume       Float   @default(0.0)
-  cachedSellVolume      Float   @default(0.0)
-  cachedGasSpent        Float   @default(0.0)
+  tokenAddress          String
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
+
+model Puppet {
+  internalID            String @id @default(auto()) @map("_id") @db.ObjectId
+  ownerTgID             String @default("")
+  boosterID             String
+  privKey               String
+  pubKey                String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
 
 model User {
   internalID            String @id @default(auto()) @map("_id") @db.ObjectId // original definition
   tgID                  String @unique
   isBotAdmin            Boolean @default(false)
-  workWalletPK          String
+  workWalletPrivKey     String
+  workWalletPubkey      String
   withdrawWalletAddr    String @default("")
   rentExpiresAt         Int @default(0)
   referredByTgID        String @default("")
-  unclaimedRefRewards   Float    @default(0.0)
+  totalRefRewards       Float    @default(0.0)
   lastPuppetPKs         String[] @default([])
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -50,7 +52,8 @@ model Settings {
   selectedTokenAddr     String @default("")
   volumeSpeed           Int @default(1)
   volumeDuration        Int @default(3600)
-  volumeParallelWallets Int @default(4)
+  volumeParallelWallets Int @default(2)
   holdersNewHolders     Int @default(500)
-  rankParallelWallets   Int @default(22)
+  rankParallelWallets   Int @default(10)
+  rankRotateEveryNTx    Int @default(40)
 }

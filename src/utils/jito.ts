@@ -23,7 +23,7 @@ export async function makeAndSendJitoBundle(
   txs: solana.VersionedTransaction[], keypair: solana.Keypair, tipOverride_inLamps?: number,
 ): Promise<boolean> {
   if (!tipOverride_inLamps)
-    tipOverride_inLamps = jitoTip.average;
+    tipOverride_inLamps = Math.min(jitoTip.average, jitoTip.chanceOf95);
 
   try {
     //const txNum = Math.ceil(txs.length / 3);
@@ -64,7 +64,7 @@ async function _bundleExecuter(
 
     const bundleID = await build_bundle(searchClient, bundleTransactionLimit, txs, signerKeypair, tipInLamps);
     // safe to keep below line commented-out. But it provides good debug output from Solana in case of fails
-    //const bundleReturnCode = await onBundleResult(search) // debug
+    //const bundleReturnCode = await onBundleResult(searchClient); // debug
     return bundleID;
   } catch (error) {
     console.log("In _bundleExecuter()");
@@ -185,3 +185,4 @@ async function waitUnilBundleSucceeds(bundleID: string) {
     return false;
   return await statusChecker.waitForResult(bundleID);
 }
+

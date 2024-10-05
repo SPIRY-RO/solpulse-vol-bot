@@ -7,15 +7,12 @@ export const envConf = envalid.cleanEnv(process.env, {
   TG_BOT_TOKEN: str(),
   HTTP_RPC_URL: str(),
   MAX_DELAY_BETWEEN_TX_SEC: num(),
-  TEST_WALLET_SECRET_KEY: str(), // used for tests only
+  //TEST_WALLET_SECRET_KEY: str(), // used for tests only
   REVENUE_WALLET: str(),
-  REFERRAL_FEE_WALLET_PK: str(),
   TEAM_NOTIFICATIONS_CHAT: num(),
   TEAM_NOTIFICATIONS_CHAT_FALLBACK: num(),
   BLOCK_ENGINE_URL: str(),
   JITO_AUTH_PRIVATE_KEY: str(),
-  POOL_API_ENDPOINT: str(),
-  POOL_API_KEY: str(),
   TEST_MODE: envalid.bool({
     default: false,
     choices: [true, false]

@@ -1,14 +1,19 @@
 import * as solana from "@solana/web3.js";
 import { Context } from "telegraf";
+import { User } from '@prisma/client';
 
 import { answerCbQuerySafe, getExpiryTsHoursFromNow, keypairFrom, tryEditOrReply, tryReply } from "../helpers";
 import { DEF_MESSAGE_OPTS, envConf } from "../config";
 import { prisma, telegraf, userManager, web3Connection } from "..";
 import * as c from "../const";
 import * as h from "../helpers";
-import RaydiumSwap from "../classes/RaydiumSwap";
+import * as sh from "../utils/solana_helpers";
 import { makeAndSendJitoBundle } from "../utils/jito";
 import { workMenuBackButton, workMenuBackButtonKeyboard } from "../commands/start";
+
+
+const RENT_FAILED_MESSAGE = `Failed to send rent funds; try again, sometimes transaction on Solana can fail. However, if this error keeps repeating, contact our team.`;
+
 
 export async function showRentOptions(ctx: Context) {
   answerCbQuerySafe(ctx);
@@ -26,6 +31,8 @@ ${c.icons.hourglassFull} If you still have time left, purchased hours will be ad
 export async function rentBot(ctx: Context, durationHours: string | number) {
   answerCbQuerySafe(ctx);
   const user = await userManager.getOrCreateUser(ctx.from?.id);
+  const settings = await userManager.getOrCreateSettingsFor(user.tgID);
+  const tag = `[rent:${h.getShortAddr(user.workWalletPubkey)}_${user.tgID}]`;
 
   const priceSol = c.RENT_HOUR_TO_PRICE_MAP[durationHours];
   if (!priceSol) {
@@ -42,7 +49,7 @@ export async function rentBot(ctx: Context, durationHours: string | number) {
     expiryTs = getExpiryTsHoursFromNow(durationHours);
   }
   try {
-    const workWalletKP = keypairFrom(user.workWalletPK);
+    const workWalletKP = keypairFrom(user.workWalletPrivKey);
     const balanceLamps = await web3Connection.getBalance(workWalletKP.publicKey);
     const balanceSol = balanceLamps / solana.LAMPORTS_PER_SOL;
     const minAllowedBalanceSol = priceSol + 0.001;
@@ -56,45 +63,40 @@ export async function rentBot(ctx: Context, durationHours: string | number) {
       return;
     }
 
+    h.debug(`${tag} renting for ${durationHours}h...`);
     let transferAmount = 0;
     if (user.referredByTgID) {
       const refFee = (priceSol / 100) * c.REFERRAL_FEE_PERC;
-      h.rewardReferrerOf(user, refFee);
+      const refRewardSentOK = await rewardReferrerOf(user, refFee);
+      if (!refRewardSentOK) {
+        await h.tryReply(ctx, RENT_FAILED_MESSAGE);
+        return;
+      }
       transferAmount = (priceSol - refFee) * solana.LAMPORTS_PER_SOL;
     } else {
       transferAmount = priceSol * solana.LAMPORTS_PER_SOL;
     }
-    const raySwap = new RaydiumSwap(workWalletKP, new solana.PublicKey(c.WSOL_MINT_ADDR));
-    const transferTx = await raySwap.getSolTransferTx(
-      null,
-      new solana.PublicKey(envConf.REVENUE_WALLET),
-      transferAmount
-    );
 
     h.tryEditOrReply(ctx, `Funds detected. Beginning transfer... Waiting time: 20-60 seconds`);
-    const success = await makeAndSendJitoBundle([transferTx], workWalletKP);
+    const success = await sh.sendSol_waitForBalChange(
+      workWalletKP, new solana.PublicKey(envConf.REVENUE_WALLET), transferAmount);
     if (success) {
       await prisma.user.update({
         where: { internalID: user.internalID },
         data: { rentExpiresAt: expiryTs },
       });
-      await h.trySend(
-        envConf.TEAM_NOTIFICATIONS_CHAT,
-        `Received <b>${(transferAmount / solana.LAMPORTS_PER_SOL).toFixed(
-          4
-        )}</b> SOL after gas & referral fees\nFrom user ${await h.getUserProfileLinkFrom(user.tgID)}`,
-        DEF_MESSAGE_OPTS
-      );
-      // debug; TODO REMOVE in the future
-      await h.trySend(
-        envConf.TEAM_NOTIFICATIONS_CHAT_FALLBACK,
-        `Received <b>${(transferAmount / solana.LAMPORTS_PER_SOL).toFixed(
-          4
-        )}</b> SOL after gas & referral fees\nFrom user ${await h.getUserProfileLinkFrom(user.tgID)}`,
-        DEF_MESSAGE_OPTS
-      );
+
+      h.debug(`${tag} rented successfully for ${durationHours}h`);
+      const notification = (`Received <b>${(transferAmount / solana.LAMPORTS_PER_SOL).toFixed(4)}</b> SOL after gas & referral fees
++${durationHours} hours
+from user ${await h.getUserProfileLinkFrom(user.tgID)}
+token addr at time of rent: <code>${settings.selectedTokenAddr}</code>`);
+
+      await h.trySend(envConf.TEAM_NOTIFICATIONS_CHAT, notification, DEF_MESSAGE_OPTS);
+      await h.trySend(envConf.TEAM_NOTIFICATIONS_CHAT_FALLBACK, notification, DEF_MESSAGE_OPTS); // debug
     } else {
-      await h.tryReply(ctx, `Failed to send rent funds; try again. If this error keeps repeating, contact our team.`);
+      await h.tryReply(ctx, RENT_FAILED_MESSAGE);
+      h.debug(`${tag} rent transaction failed; either failed to get submitted, or balance-change check timed out`);
       return;
     }
 
@@ -107,7 +109,7 @@ You can start using the bot right away`,
     return;
   } catch (e: any) {
     await tryReply(ctx, `An error ocurred while handling your payment. Details for devs:\n${e}`);
-    console.error(`Error while renting bot: ${e}`);
+    console.error(`${tag} error while renting bot: ${e}`);
     console.trace(e);
     return;
   }
@@ -132,9 +134,46 @@ function getPaymentKeyboard() {
         { text: `1 week - ${prices[5]} ${CHAIN_TICKER}`, callback_data: `data-rent-${hours[5]}` },
       ],
       [
-        { text: `${Number(hours[6])/24} days - ${prices[6]} ${CHAIN_TICKER}`, callback_data: `data-rent-${hours[6]}` },
+        { text: `${Number(hours[6]) / 24} days - ${prices[6]} ${CHAIN_TICKER}`, callback_data: `data-rent-${hours[6]}` },
       ],
       [workMenuBackButton],
     ],
   };
+}
+
+
+
+async function rewardReferrerOf(userDB: User, referralFeeSol: number) {
+  if (!referralFeeSol)
+    throw Error(`Can't reward referral with ${referralFeeSol} of SOL`);
+  try {
+    const referrer = await prisma.user.findUnique({
+      where: { tgID: userDB.referredByTgID }
+    })
+    if (!referrer) {
+      console.warn(`Attempting to reward referrer, but '${userDB.tgID}' is not referred!`);
+      return false;
+    }
+    const receiverPubkey = new solana.PublicKey(referrer.workWalletPubkey);
+    const senderKP = h.keypairFrom(userDB.workWalletPrivKey);
+    const referralFeeLamps = Number((referralFeeSol * solana.LAMPORTS_PER_SOL).toFixed(0));
+    h.debug(`[${h.getShortAddr(senderKP.publicKey)}] adding referral rewards of ${referralFeeSol} SOL`);
+    const success = await sh.sendSol_waitForBalChange(senderKP, receiverPubkey, referralFeeLamps);
+    if (success) {
+      h.debug(`[${h.getShortAddr(senderKP.publicKey)}->${h.getShortAddr(receiverPubkey)}] ref reward ${referralFeeSol} SOL successfully transferred; ${userDB.tgID} -> ${referrer.tgID}`);
+      await prisma.user.update({
+        where: { internalID: referrer.internalID },
+        data: { totalRefRewards: referrer.totalRefRewards + referralFeeSol },
+      });
+      return true;
+    } else {
+      console.error(`Tx to add ref rewards failed; referrer TG ID: ${referrer.tgID}`);
+      return false;
+    }
+
+  } catch (e: any) {
+    console.error(`Caught error while trying to reward referrer ${userDB.referredByTgID}; ${e}`);
+    console.trace(e);
+    return false;
+  }
 }

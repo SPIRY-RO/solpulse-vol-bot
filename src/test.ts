@@ -6,13 +6,11 @@ import { envConf } from "./config";
 import * as c from "./const";
 import * as h from "./helpers";
 import * as sh from "./utils/solana_helpers";
-import RaydiumSwap from "./classes/RaydiumSwap";
 import { web3Connection } from '.';
 import { makeAndSendJitoBundle } from './utils/jito';
 import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { jitoTip, waitForJitoTipMetrics } from './utils/jito-tip-deamons';
 import { Wallet } from '@coral-xyz/anchor';
-import Booster from './classes/Booster';
 
 
 const testConf = {
@@ -40,7 +38,6 @@ export async function TestVolumeBooster() {
   await sleep(2000);
   booster.start();
 }
-*/
 
 
 export async function TestCalcAmounts() {
@@ -101,8 +98,8 @@ export async function TestRankBoostWorkflow() {
 
   const tokenAcc_slave = await sh.getTokenAcc(tokenAddr, slaveKP.publicKey);
   const quoteBalances = await sh.getTokenAccBalance(tokenAcc_slave?.pubkey!);
-  const tokenSol = quoteBalances.uiAmount;
-  const tokenLamps = quoteBalances.amount;
+  const tokenSol = quoteBalances.inLamps;
+  const tokenLamps = quoteBalances.inSol;
   console.log({ tokenSol, tokenLamps });
   const tokenTransferInstrs = await sh.getInstr_transferToken_openReceiverAccIfNeeded(
     slaveKP,
@@ -162,3 +159,11 @@ export async function TestRankBoostWorkflow() {
   console.log(`Sent SOL OK? ${txHash}`);
 }
 
+
+export function PkToAddress() {
+  const pk = '5t5dfa6oV7DDzBvbasDJoNDjr1Q6KLGLAvSMgsscjuZxEfsz5qxXZTJWWQMx4UR7e6zbgCdbyDYyUrdJeTsFFFw4';
+  const kp = h.keypairFrom(pk);
+  console.log(`Wallet addr: ${kp.publicKey.toBase58()}`);
+}
+
+*/

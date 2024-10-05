@@ -1,16 +1,17 @@
 import * as solana from '@solana/web3.js';
 import { Context } from "telegraf";
 
-import Booster, { BOOSTER_TYPES_TYPE } from '../classes/Booster';
+import BoosterBase, { BoosterType } from '../classes/boosters/base';
 import * as c from '../const';
 import * as h from '../helpers';
 import { DEF_MESSAGE_OPTS } from '../config';
 import { prisma, userManager } from '..';
 import { Booster as BoosterPrisma } from '@prisma/client';
 import { workMenuBackButton } from '../commands/start';
+import { solanaUsdPrice } from '../utils/price-feeds';
 
 
-export async function showBooster(ctx: Context, type: BOOSTER_TYPES_TYPE, boosterID?: string, refreshOnly = false) {
+export async function showBooster(ctx: Context, type: BoosterType, boosterID?: string, refreshOnly = false) {
   const senderID = ctx.from?.id;
 
   switch (type) {
@@ -32,32 +33,44 @@ export async function showBooster(ctx: Context, type: BOOSTER_TYPES_TYPE, booste
 
 async function showVolumeBooster(ctx: Context, boosterID?: string, refreshOnly = false) {
   h.answerCbQuerySafe(ctx);
-  const userID = ctx.from?.id;
-  const type: BOOSTER_TYPES_TYPE = 'volume';
+  const userID = String(ctx.from!.id);
+  const type: BoosterType = 'volume';
   const user = await userManager.getOrCreateUser(userID);
   const settings = await userManager.getOrCreateSettingsFor(userID);
   const secsOfRentLeft = Number(((user.rentExpiresAt - Date.now()) / 1000).toFixed());
-  let existingBooster: Booster | null | undefined;
+  let existingBooster: BoosterBase | null | undefined;
   if (boosterID)
-    existingBooster = Booster.getActiveBoosterBy(boosterID);
+    existingBooster = BoosterBase.getActiveByID(boosterID);
   else
-    existingBooster = await Booster.getActiveBoosterFor(settings.selectedTokenAddr, type, userID);
+    existingBooster = BoosterBase.getActiveBoosterFor(settings.selectedTokenAddr, type, userID);
 
   let powerButton = {
     text: `${c.icons.green} Start`,
     callback_data: `data-boosterStart-${type}`,
   };
-  if (existingBooster && existingBooster.isActive && !existingBooster.wasAskedToStop)
+  if (existingBooster && !existingBooster.wasAskedToStop)
     powerButton = {
       text: `${c.icons.red} Stop`,
       callback_data: `data-boosterStop-${type}-${existingBooster.internalID}`,
     };
-  else if (existingBooster && existingBooster.isActive && existingBooster.wasAskedToStop)
+  else if (existingBooster && existingBooster.wasAskedToStop)
     powerButton = {
       text: `${c.icons.white} Stopping...`,
       callback_data: `#`,
     };
 
+  /*
+  const mainWalletBalance = Number((await userManager.getWorkWalletBalanceFor(user)).toFixed(4));
+  let lastKnownPuppetBalances = 0;
+  if (existingBooster) {
+    for (const puppet of existingBooster.puppets) {
+      lastKnownPuppetBalances += puppet.lastBalance;
+    }
+  }
+  const totalBalance = Number((mainWalletBalance + lastKnownPuppetBalances).toFixed(4));
+  */
+  const totalVolumeUSD = (((existingBooster?.metrics?.buyVolume || 0) + (existingBooster?.metrics?.sellVolume || 0)) * solanaUsdPrice).toFixed(2);
+  const totalBalance = Number((await userManager.getBalFromAllAssociatedWallets_inSol(user)).toFixed(4));
   let volumeBoosterText = `${c.icons.chartBars} Volume Booster ${c.icons.chartBars}
 
 ${c.icons.moonWhite} Token:
@@ -68,11 +81,11 @@ ${c.icons.clockRed} Rent time left: ${h.secondsToTimingNotation(secsOfRentLeft)}
 ${c.icons.lightning} Booster speed: <b>${settings.volumeSpeed}</b> ${h.getCarFor(settings.volumeSpeed)}
 ${c.icons.hourglassFull} Booster auto shut-off after: ${h.secondsToTimingNotation(settings.volumeDuration)}
 
-${c.icons.cashBankHouse} Your balance: ${(await userManager.getWorkWalletBalanceFor(user)).toFixed(4)} SOL
-${c.icons.bot} Wallets: ${existingBooster?.puppetWalletBalancesSol || 'N/A'}
+${c.icons.cashBag} Your balance(including puppet-wallets) ${totalBalance} SOL
 
 ${c.icons.chartBars} Volume generated:
-Buys: ${existingBooster?.metrics?.buyVolume?.toFixed(3) || 'N/A'} SOL | sells: ${existingBooster?.metrics?.sellVolume?.toFixed(3) || 'N/A'} SOL
+Buys: ${existingBooster?.metrics?.buyVolume.toFixed(3) || 'N/A'} SOL | sells: ${existingBooster?.metrics?.sellVolume?.toFixed(3) || 'N/A'} SOL
+Total volume generated: $${totalVolumeUSD} 
 `;
 
   const keyboard = {
@@ -83,14 +96,20 @@ Buys: ${existingBooster?.metrics?.buyVolume?.toFixed(3) || 'N/A'} SOL | sells: $
             text: `${c.icons.lightning} Speed`,
             callback_data: `settings_speed`,
           },
-          powerButton,
           {
             text: `${c.icons.hourglassFull} Duration`,
             callback_data: `settings_duration`,
           },
         ],
         [
+          {
+            text: `${c.icons.peopleGrayFaceless} Number of wallets`,
+            callback_data: `settings_volume_parallel`,
+          },
+        ],
+        [
           workMenuBackButton,
+          powerButton,
           {
             text: `${c.icons.refresh} Refresh`,
             callback_data: `data-boosterRefresh-${type}`,
@@ -110,45 +129,48 @@ Buys: ${existingBooster?.metrics?.buyVolume?.toFixed(3) || 'N/A'} SOL | sells: $
 
 
 
+
 async function showHoldersBooster(ctx: Context, boosterID?: string, refreshOnly = false) {
   h.answerCbQuerySafe(ctx);
-  const userID = ctx.from?.id;
-  const type: BOOSTER_TYPES_TYPE = 'holders';
+  const userID = String(ctx.from!.id);
+  const type: BoosterType = 'holders';
   const user = await userManager.getOrCreateUser(userID);
   const settings = await userManager.getOrCreateSettingsFor(userID);
   const secsOfRentLeft = Number(((user.rentExpiresAt - Date.now()) / 1000).toFixed());
-  let existingBooster: Booster | null | undefined;
+  let existingBooster: BoosterBase | null | undefined;
   if (boosterID)
-    existingBooster = Booster.getActiveBoosterBy(boosterID);
+    existingBooster = BoosterBase.getActiveByID(boosterID);
   else
-    existingBooster = await Booster.getActiveBoosterFor(settings.selectedTokenAddr, type, userID);
+    existingBooster = BoosterBase.getActiveBoosterFor(settings.selectedTokenAddr, type, userID);
 
   let powerButton = {
     text: `${c.icons.green} Start`,
     callback_data: `data-boosterStart-${type}`,
   };
-  if (existingBooster && existingBooster.isActive && !existingBooster.wasAskedToStop)
+
+  if (existingBooster && !existingBooster.wasAskedToStop)
     powerButton = {
       text: `${c.icons.red} Stop`,
       callback_data: `data-boosterStop-${type}-${existingBooster.internalID}`,
     };
-  else if (existingBooster && existingBooster.isActive && existingBooster.wasAskedToStop)
+  else if (existingBooster && existingBooster.wasAskedToStop)
     powerButton = {
       text: `${c.icons.white} Stopping...`,
       callback_data: `#`,
-    };
+    }
 
-  let volumeBoosterText = `${c.icons.bag} Holder Booster ${c.icons.bag}
+
+  let holderBoosterText = `${c.icons.bag} Holder Booster ${c.icons.bag}
 
 ${c.icons.moonWhite} Token:
 <code>${settings.selectedTokenAddr}</code>
 
 ${c.icons.clockRed} Rent time left: ${h.secondsToTimingNotation(secsOfRentLeft)}
 
-${c.icons.cashBag} Your balance: ${(await userManager.getWorkWalletBalanceFor(user)).toFixed(4)} SOL
+${c.icons.cashBag} Your balance: ${(await userManager.getBalFromAllAssociatedWallets_inSol(user)).toFixed(4)} SOL
 
-${c.icons.peopleGrayFaceless} Holders generated: ${existingBooster?.metrics.totalHolders || 'N/A'}
-${existingBooster?.isActive ? `Target for <b>this booster</b>: ${existingBooster.settings.holdersNewHolders}\n` : ''}
+${c.icons.peopleGrayFaceless} Holders generated: ${existingBooster?.metrics.uniqueWallets || 'N/A'}
+${existingBooster ? `Target for <b>this booster</b>: ${existingBooster.settings.holdersNewHolders}\n` : ''}
 Each holder costs about 0.0021 SOL
 `;
 
@@ -185,9 +207,9 @@ Each holder costs about 0.0021 SOL
   }
 
   if (refreshOnly)
-    await h.tryEdit(ctx, volumeBoosterText, keyboard);
+    await h.tryEdit(ctx, holderBoosterText, keyboard);
   else
-    await h.tryEditOrReply(ctx, volumeBoosterText, keyboard);
+    await h.tryEditOrReply(ctx, holderBoosterText, keyboard);
   return;
 }
 
@@ -195,59 +217,59 @@ Each holder costs about 0.0021 SOL
 
 export async function showRankBooster(ctx: Context, boosterID?: string, refreshOnly = false) {
   h.answerCbQuerySafe(ctx);
-  const userID = ctx.from?.id;
-  const type: BOOSTER_TYPES_TYPE = 'rank';
+  const userID = String(ctx.from!.id);
+  const type: BoosterType = 'rank';
   const user = await userManager.getOrCreateUser(userID);
   const settings = await userManager.getOrCreateSettingsFor(userID);
   const secsOfRentLeft = Number(((user.rentExpiresAt - Date.now()) / 1000).toFixed());
-  let existingBooster: Booster | null | undefined;
+  let existingBooster: BoosterBase | null | undefined;
   if (boosterID)
-    existingBooster = Booster.getActiveBoosterBy(boosterID);
+    existingBooster = BoosterBase.getActiveByID(boosterID);
   else
-    existingBooster = await Booster.getActiveBoosterFor(settings.selectedTokenAddr, type, userID);
+    existingBooster = BoosterBase.getActiveBoosterFor(settings.selectedTokenAddr, type, userID);
 
   let powerButton = {
     text: `${c.icons.green} Start`,
     callback_data: `data-boosterStart-${type}`,
   };
-  if (existingBooster && existingBooster.isActive && !existingBooster.wasAskedToStop)
+  if (existingBooster && !existingBooster.wasAskedToStop)
     powerButton = {
       text: `${c.icons.red} Stop`,
       callback_data: `data-boosterStop-${type}-${existingBooster.internalID}`,
     };
-  else if (existingBooster && existingBooster.isActive && existingBooster.wasAskedToStop)
+  else if (existingBooster && existingBooster.wasAskedToStop)
     powerButton = {
       text: `${c.icons.white} Stopping...`,
       callback_data: `#`,
     };
 
+  /*
   const mainWalletBalance = Number((await userManager.getWorkWalletBalanceFor(user)).toFixed(4));
   let lastKnownPuppetBalances = 0;
   if (existingBooster) {
-    for (const puppet of existingBooster.puppetWallets) {
-      lastKnownPuppetBalances += puppet.balances.baseSol;
+    for (const puppet of existingBooster.puppets) {
+      lastKnownPuppetBalances += puppet.lastBalance;
     }
   }
   const totalBalance = Number((mainWalletBalance + lastKnownPuppetBalances).toFixed(4));
+  */
+ const totalBalance = Number((await userManager.getBalFromAllAssociatedWallets_inSol(user)).toFixed(4));
     
   let volumeBoosterText = `${c.icons.goblet} Rank Booster ${c.icons.goblet}
-The Rank Boost will pump DexScreener metrics to super-boost your token's ranking on it by:
-
-- Increasing number of transactions
-- Ratio of buys to sells -> More buys then sells
-- Ratio of buyers to sellers -> More buyers then sellers
-- Number of makers -> More traders
-
-Ideal and most cost-efficient for new launches and charts with some organic volume.
 
 ${c.icons.moonWhite} Token:
 <code>${settings.selectedTokenAddr}</code>
 
 ${c.icons.clockRed} Rent time left: ${h.secondsToTimingNotation(secsOfRentLeft)}
 
-${c.icons.cashBag} Your balance${lastKnownPuppetBalances ? '(including puppet wallets)' : ''}: ${totalBalance} SOL
+${c.icons.cashBag} Your balance(including puppet-wallets) ${totalBalance} SOL
 
-${c.icons.cashBanknote} Buys made: ${existingBooster?.metrics.totalTx || 'N/A'}
+Settings:
+${c.icons.clockAntique} Fresh wallet interval ${settings.rankRotateEveryNTx}
+${c.icons.peopleGrayFaceless} Number of wallets ${settings.rankParallelWallets}
+
+${c.icons.cashBanknote} Buys made: ${existingBooster?.metrics.txs || 'N/A'}
+${c.icons.peopleGrayFaceless} Unique makers: ${existingBooster?.metrics.uniqueWallets || 'N/A'}
 `;
 
   const keyboard = {
@@ -255,6 +277,18 @@ ${c.icons.cashBanknote} Buys made: ${existingBooster?.metrics.totalTx || 'N/A'}
       inline_keyboard: [
         [
           powerButton,
+        ],
+        [
+          {
+            text: `${c.icons.peopleGrayFaceless} Number of wallets`,
+            callback_data: `settings_rank_parallel`,
+          },
+        ],
+        [
+          {
+            text: `${c.icons.clockAntique} Fresh wallet interval`,
+            callback_data: `settings_rank_frequency`,
+          },
         ],
         [
           workMenuBackButton,
