@@ -107,6 +107,8 @@ export const icons = {
   greenSquare: "🟩",
   check: "✅",
   cross: "❌",
+  sprout: "🌱",
+  shield: "🛡",
   backArrow: "↪️",
   rightArrow: "➡️",
   leftArrow: "⬅️",
