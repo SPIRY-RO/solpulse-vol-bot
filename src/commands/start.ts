@@ -128,16 +128,21 @@ Press "${c.icons.lock} Unlock usage" once you're ready to boost your project.
 /* Start message */
 
 const startMessage = `
-${c.icons.rocket}${c.icons.chartBars} Welcome to the SolPages PageMaker Volume Bot ${c.icons.chartBars}${c.icons.rocket}
+${c.icons.chartBars} Welcome to Syndicate Boosting Bot ${c.icons.rocket}
 
 We are here to provide you the best Volume Boosting Bot on Solana
 
-${c.icons.flame} Optimised Volume Conversion 
-${c.icons.racecar} Variable Speeds
-${c.icons.alienHappy} Integrated Anti MEV-mode
-${c.icons.chartUpRed} Natural Volume Mode for Investor Confidence
+${c.icons.flame} Efficient Volume Handling 
+- Maximize the impact of every trade with a system designed to manage volume smoothly and effectively.
 
-${c.icons.chainLink} Contact the SolPage Team - @solpagestoken_portal
+${c.icons.sprout} Organic Volume Module 
+- Create a consistent and reliable trading volume that attracts investors and builds long-term market trust.
+
+${c.icons.shield} Anti BOTS-Protection 
+- Protect your trades with built-in defense against MEV exploitation.
+
+
+${c.icons.chainLink} For support contact @SpiryBTC for sales @dukuweb3
 
 To start click "${c.icons.moonWhite} Enter Token Address ${c.icons.moonWhite}" button below.
 `;
@@ -150,10 +155,25 @@ export async function showWelcomeMessage(ctx: Context) {
     return;
   }
   const userSettings = await userManager.getOrCreateSettingsFor(ctx.from?.id)
+
   const keyboard = [
+    [
+      {
+        text: "=== GET STARTED ===",
+        callback_data: "none",
+      },
+    ],
     [{
-      text: `${c.icons.moonWhite} Enter token address ${c.icons.moonWhite}`,
+      text: `${c.icons.moonWhite} Enter token address to boost ${c.icons.moonWhite}`,
       callback_data: `token_address_wizard`,
+    }],
+    [{
+      text: `${c.icons.cashBankHouse} Your Wallet`,
+      callback_data: `wallet`,
+    }],
+    [{
+      text: `${c.icons.handshake} Affiliate Program`,
+      callback_data: `referrals`,
     }]
   ];
 

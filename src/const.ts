@@ -37,8 +37,8 @@ export const JITO_MAX_BUNDLES_PER_SEC_RATE_LIMIT = 50; // for our special key
 export const JITO_MAX_BUNDLE_IDS_PER_STATUS_CHECK = 5;
 
 export const SOCIALS = {
-  name: "SolPages PageMaker Volume Bot",
-  telegram: "@solpagestoken_portal",
+  name: "Syndicate Boosters",
+  telegram: "",
 };
 
 
