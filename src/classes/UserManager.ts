@@ -10,9 +10,7 @@ import { User } from '@prisma/client';
 class UserManager {
 
   private _unconditionalAdmins = [
-    1847526983, // vik
-    309378400, // michael p
-    7271976123, // michael p dappst acc
+    476923989, // vik
   ]
 
 
