@@ -139,8 +139,6 @@ export async function setDurationSettings(ctx: any, duration: number | string) {
       volumeDuration: Number(duration),
     }
   });
-  await h.tryReply(ctx, `Duration changed`);
-  await h.sleep(1500);
   return await showDurationSettings(ctx);
 }
 
@@ -160,6 +158,20 @@ const volumeParallelWalletsKeyboard = {
       {
         text: `4`,
         callback_data: `data-settings-parallelVolume-4`,
+      },
+    ],
+    [
+      {
+        text: `10`,
+        callback_data: `data-settings-parallelVolume-10`,
+      },
+      {
+        text: `15`,
+        callback_data: `data-settings-parallelVolume-15`,
+      },
+      {
+        text: `25`,
+        callback_data: `data-settings-parallelVolume-25`,
       },
     ],
     [
@@ -202,8 +214,6 @@ export async function setVolumeParallelSettings(ctx: any, parallelWallets: numbe
       volumeParallelWallets: Number(parallelWallets),
     }
   });
-  await h.tryReply(ctx, `Number of wallets changed`);
-  await h.sleep(1500);
   return await showVolumeParallelSettings(ctx);
 }
 
@@ -272,12 +282,14 @@ const rankParallelWalletsKeyboard = {
         callback_data: `data-settings-parallelRank-20`,
       },
     ],
+/*
     [
       {
         text: `1`,
         callback_data: `data-settings-parallelRank-1`,
       },
     ],
+*/
     [
       {
         text: `${c.icons.backArrow} Back`,
@@ -319,8 +331,6 @@ export async function setRankParallelSettings(ctx: any, parallelWallets: number 
       rankParallelWallets: Number(parallelWallets),
     }
   });
-  await h.tryReply(ctx, `Number of wallets changed`);
-  await h.sleep(1500);
   return await showRankParallelSettings(ctx);
 }
 
@@ -341,12 +351,14 @@ const changeMakerFrequencyKeyboard = {
         callback_data: `data-settings-makers-40`,
       },
     ],
+/*
     [
       {
         text: `8`,
         callback_data: `data-settings-makers-8`,
       },
     ],
+    */
     [
       {
         text: `${c.icons.backArrow} Back`,
@@ -388,7 +400,5 @@ export async function setChangeMakerFreqSettings(ctx: any, changeEveryNBuys: num
       rankRotateEveryNTx: Number(changeEveryNBuys),
     }
   });
-  await h.tryReply(ctx, `Changed fresh wallet interval`);
-  await h.sleep(1500);
   return await showChangeMakerFreqSettings(ctx);
 }

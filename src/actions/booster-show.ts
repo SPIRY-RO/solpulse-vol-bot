@@ -80,8 +80,12 @@ ${c.icons.clockRed} Rent time left: ${h.secondsToTimingNotation(secsOfRentLeft)}
 
 ${c.icons.lightning} Booster speed: <b>${settings.volumeSpeed}</b> ${h.getCarFor(settings.volumeSpeed)}
 ${c.icons.hourglassFull} Booster auto shut-off after: ${h.secondsToTimingNotation(settings.volumeDuration)}
+${c.icons.people} Volume will come from ${settings.volumeParallelWallets} wallets
 
 ${c.icons.cashBag} Your balance(including puppet-wallets) ${totalBalance} SOL
+
+The fewer wallets you use - the more volume you get for your $ and the less you lose on gas per transaction.
+The more wallets - the more organic the transactions will appear.
 
 ${c.icons.chartBars} Volume generated:
 Buys: ${existingBooster?.metrics?.buyVolume.toFixed(3) || 'N/A'} SOL | sells: ${existingBooster?.metrics?.sellVolume?.toFixed(3) || 'N/A'} SOL
@@ -103,7 +107,7 @@ Total volume generated: $${totalVolumeUSD}
         ],
         [
           {
-            text: `${c.icons.peopleGrayFaceless} Number of wallets`,
+            text: `${c.icons.cashBankHouse} Number of wallets`,
             callback_data: `settings_volume_parallel`,
           },
         ],
@@ -169,9 +173,9 @@ ${c.icons.clockRed} Rent time left: ${h.secondsToTimingNotation(secsOfRentLeft)}
 
 ${c.icons.cashBag} Your balance: ${(await userManager.getBalFromAllAssociatedWallets_inSol(user)).toFixed(4)} SOL
 
-${c.icons.peopleGrayFaceless} Holders generated: ${existingBooster?.metrics.uniqueWallets || 'N/A'}
+${c.icons.cashBankHouse} Holders generated: ${existingBooster?.metrics.uniqueWallets || 'N/A'}
 ${existingBooster ? `Target for <b>this booster</b>: ${existingBooster.settings.holdersNewHolders}\n` : ''}
-Each holder costs about 0.0021 SOL
+Each holder costs about 0.0021 SOL. Recommended minimum for this booster is 0.5 SOL or more.
 `;
 
   const keyboard = {
@@ -179,18 +183,18 @@ Each holder costs about 0.0021 SOL
       inline_keyboard: [
         [
           {
-            text: `${c.icons.peopleGrayFaceless} Holder Goal: ${settings.holdersNewHolders}`,
+            text: `${c.icons.cashBankHouse} Holder Goal: ${settings.holdersNewHolders}`,
             callback_data: `settings_holders`,
           },
         ],
         [
           {
-            text: `${c.icons.chevronLeft}${c.icons.peopleGrayFaceless}`,
+            text: `${c.icons.chevronLeft}${c.icons.cashBankHouse}`,
             callback_data: `settings_holders_dec`,
           },
           powerButton,
           {
-            text: `${c.icons.peopleGrayFaceless}${c.icons.chevronRight}`,
+            text: `${c.icons.cashBankHouse}${c.icons.chevronRight}`,
             callback_data: `settings_holders_inc`,
           },
         ],
@@ -266,10 +270,10 @@ ${c.icons.cashBag} Your balance(including puppet-wallets) ${totalBalance} SOL
 
 Settings:
 ${c.icons.clockAntique} Fresh wallet interval ${settings.rankRotateEveryNTx}
-${c.icons.peopleGrayFaceless} Number of wallets ${settings.rankParallelWallets}
+${c.icons.cashBankHouse} Number of wallets ${settings.rankParallelWallets}
 
 ${c.icons.cashBanknote} Buys made: ${existingBooster?.metrics.txs || 'N/A'}
-${c.icons.peopleGrayFaceless} Unique makers: ${existingBooster?.metrics.uniqueWallets || 'N/A'}
+${c.icons.cashBankHouse} Unique makers: ${existingBooster?.metrics.uniqueWallets || 'N/A'}
 `;
 
   const keyboard = {
@@ -280,7 +284,7 @@ ${c.icons.peopleGrayFaceless} Unique makers: ${existingBooster?.metrics.uniqueWa
         ],
         [
           {
-            text: `${c.icons.peopleGrayFaceless} Number of wallets`,
+            text: `${c.icons.cashBankHouse} Number of wallets`,
             callback_data: `settings_rank_parallel`,
           },
         ],

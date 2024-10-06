@@ -259,7 +259,8 @@ ${this.tag}`;
     if (this.type === 'volume') {
       metrics += `
 Buys: ${this.metrics.buyVolume.toFixed(3)} SOL | sells: ${this.metrics.sellVolume.toFixed(3) || 'N/A'} SOL
-Total txs: ${this.metrics.txs}`;
+Total txs: ${this.metrics.txs}
+Unique wallets(market-makers) used: ${this.metrics.uniqueWallets}`;
     } else if (this.type === 'holders') {
       metrics += `
 New holders: ${this.metrics.uniqueWallets}`;
