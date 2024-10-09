@@ -58,7 +58,7 @@ export const RENT_HOUR_TO_PRICE_MAP: any = {
   "12": 5,
   "24": 8,
   [String(7 * 24)]: 15,
-  [String(30 * 24)]: 0.01,
+  [String(30 * 24)]: 25,
 };
 
 export const icons = {
